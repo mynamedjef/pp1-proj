@@ -34,14 +34,17 @@ public class sym {
 	public static final int SEMI = 24;
 	public static final int EQUAL = 25;
 	public static final int BEQ = 26;
-	public static final int LBRACKET = 27;
-	public static final int RBRACKET = 28;
-	public static final int LBRACE = 29;
-	public static final int OR = 30;
-	public static final int RBRACE = 31;
-	public static final int MINUS = 32;
+	public static final int LEQ = 27;
+	public static final int LANGLE = 28;
+	public static final int RANGLE = 29;
+	public static final int LBRACKET = 30;
+	public static final int RBRACKET = 31;
+	public static final int LBRACE = 32;
+	public static final int OR = 33;
+	public static final int RBRACE = 34;
+	public static final int MINUS = 35;
 	
-	public static final int EOF = 33;
-	public static final int VOID = 34;
-	public static final int PROGRAM = 35;
+	public static final int EOF = 36;
+	public static final int VOID = 37;
+	public static final int PROGRAM = 38;
 }

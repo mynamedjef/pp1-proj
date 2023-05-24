@@ -1,2 +1,6 @@
 *.class
-Yylex.java
+Yylex*
+sym.java
+MJParser.java
+
+ast/

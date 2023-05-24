@@ -1,6 +1,6 @@
 package rs.ac.bg.etf.pp1;
 
-public class sym {
+public class sym_old {
 	// Keywords
 	public static final int BREAK = 1;
 	public static final int CONT = 2;
@@ -43,8 +43,14 @@ public class sym {
 	public static final int OR = 33;
 	public static final int RBRACE = 34;
 	public static final int MINUS = 35;
-	
-	public static final int EOF = 36;
-	public static final int VOID = 37;
-	public static final int PROGRAM = 38;
+	public static final int EQ = 36;
+	public static final int NEQ = 37;
+
+	public static final int CONST = 38;
+	public static final int CLASS = 39;
+	public static final int EXTENDS = 40;
+
+	public static final int EOF = 41;
+	public static final int VOID = 42;
+	public static final int PROGRAM = 43;
 }

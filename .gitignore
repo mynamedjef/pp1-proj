@@ -1,2 +1,3 @@
 bin/
 logs/
+spec/mjparser_astbuild.cup

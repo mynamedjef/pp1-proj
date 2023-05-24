@@ -1,0 +1,274 @@
+
+package rs.ac.bg.etf.pp1;
+
+import java_cup.runtime.*;
+import org.apache.log4j.*;
+import rs.ac.bg.etf.pp1.ast.*;
+
+parser code {:
+
+	Logger log = Logger.getLogger(getClass());
+
+    // slede redefinisani metodi za prijavu gresaka radi izmene teksta poruke
+
+    public void report_fatal_error(String message, Object info) throws java.lang.Exception {
+    	done_parsing();
+    	report_error(message, info);
+    }
+
+    public void syntax_error(Symbol cur_token) {
+        report_error("\nSintaksna greska", cur_token);
+    }
+
+    public void unrecovered_syntax_error(Symbol cur_token) throws java.lang.Exception {
+        report_fatal_error("Fatalna greska, parsiranje se ne moze nastaviti", cur_token);
+    }
+
+    public void report_error(String message, Object info) {
+    	StringBuilder msg = new StringBuilder(message); 
+    	if (info instanceof Symbol)
+            msg.append (" na liniji ").append(((Symbol)info).left);
+        log.error(msg.toString());
+    }
+		
+:}
+
+
+scan with {:
+
+	Symbol s = this.getScanner().next_token();
+	if (s != null && s.value != null) 
+		log.info(s.toString() + " " + s.value.toString());
+	return s;
+:}
+
+
+
+terminal Boolean BOOL;
+terminal Integer NUMBER;
+terminal String IDENT;
+terminal Character CHAR;
+
+nonterminal ActPars, ActParsParens, Addop, Assignop, ClassDecl, ClassOptExtends;
+nonterminal Condition, CondFact, ConditionIf, CondTerm;
+nonterminal ConstDecl, ConstOne, ConstList, Designator;
+nonterminal DesignatorStatement, Expr, Facotr, Factor, FormPar;
+nonterminal FormPars, FormParsParens, Label, Matched, MethodType;
+nonterminal MethodDecl, MethodDeclList, Mulop;
+nonterminal Program, ProgHeadList, ProgHead, Relop, Statement, StatementList, Term, Type;
+nonterminal Unmatched, VarDecl, VarDeclList, VarDeclSingle, VarList;
+
+terminal AND, BEQ, BREAK;
+terminal CLASS, COMMA, CONST, CONT, DECR;
+terminal DOT, ELSE, EQ, EQUAL, EXTENDS;
+terminal IF, INCR, LAMBDA, LANGLE, LBRACE;
+terminal LBRACKET, LEQ, LPAREN, MAP, MINUS;
+terminal NEQ, NEW, OR, PERCENT;
+terminal PLUS, PRINT, PROGRAM, RANGLE, RBRACE;
+terminal RBRACKET, READ, RETURN, RPAREN, SEMI;
+terminal SLASH, STAR, VOID, WHILE;
+
+Program ::= PROGRAM IDENT ProgHeadList LBRACE MethodDeclList RBRACE;
+
+ProgHeadList ::= ProgHeadList ProgHead
+			|
+			;
+
+ProgHead ::= ClassDecl
+			|
+			VarDecl
+			|
+			ConstDecl;
+
+ConstDecl ::= CONST Type ConstList SEMI;
+
+ConstOne ::= NUMBER
+			|
+			BOOL
+			|
+			CHAR;
+
+ConstList ::= ConstList COMMA IDENT EQUAL ConstOne
+			|
+			IDENT EQUAL ConstOne;
+
+VarDeclList ::= VarDeclList VarDecl
+			|
+			;
+
+VarDecl ::= Type VarList SEMI;
+
+VarList ::= VarList COMMA VarDeclSingle
+		|
+		VarDeclSingle;
+
+VarDeclSingle ::= IDENT
+				|
+				IDENT LBRACKET RBRACKET
+				|
+				IDENT LBRACKET RBRACKET LBRACKET RBRACKET;
+
+ClassDecl ::= CLASS IDENT ClassOptExtends LBRACE VarDeclList RBRACE
+			|
+			CLASS IDENT ClassOptExtends LBRACE VarDeclList LBRACE MethodDeclList RBRACE RBRACE;
+
+ClassOptExtends ::= EXTENDS Type
+				|
+				;
+
+MethodDeclList ::= MethodDeclList MethodDecl
+				|
+				;
+
+MethodDecl ::= MethodType IDENT FormParsParens VarDeclList LBRACE StatementList RBRACE;
+
+MethodType ::= Type
+			|
+			VOID;
+
+FormPars ::= FormPars COMMA FormPar
+			|
+			FormPar;
+
+FormParsParens ::= LPAREN FormPars RPAREN
+				|
+				LPAREN RPAREN;
+
+FormPar ::= Type IDENT
+		|
+		Type IDENT LBRACKET RBRACKET
+		|
+		Type IDENT LBRACKET RBRACKET LBRACKET RBRACKET;
+
+Type ::= IDENT;
+
+Statement ::= Matched
+			|
+			Unmatched;
+
+Unmatched ::= IF ConditionIf Statement
+			|
+			IF ConditionIf Matched ELSE Unmatched
+			|
+			WHILE ConditionIf Unmatched;
+
+Matched ::= DesignatorStatement SEMI
+			|
+			IF ConditionIf Matched ELSE Matched
+			|
+			WHILE ConditionIf Matched
+			|
+			BREAK SEMI
+			|
+			CONT SEMI
+			|
+			RETURN Expr SEMI
+			|
+			RETURN SEMI
+			|
+			READ LPAREN Designator RPAREN SEMI
+			|
+			PRINT LPAREN Expr RPAREN SEMI
+			|
+			PRINT LPAREN Expr COMMA NUMBER RPAREN SEMI
+			|
+			Designator DOT MAP LPAREN IDENT LAMBDA Statement RPAREN SEMI
+			|
+			LBRACE StatementList RBRACE;
+			
+StatementList ::= StatementList Statement
+				|
+				;
+
+DesignatorStatement ::= Designator Assignop Expr
+					|
+					Designator ActParsParens
+					|
+					Designator INCR
+					|
+					Designator DECR;
+
+ActPars ::= ActPars COMMA Expr
+		|
+		Expr;
+
+ActParsParens ::= LPAREN ActPars RPAREN
+				|
+				LPAREN RPAREN;
+
+ConditionIf ::= LPAREN Condition RPAREN
+			|
+			LPAREN error RPAREN:l {: parser.report_error("Izvršen oporavak do ')' za IF/WHILE u liniji " + lleft, null); :};
+
+Condition ::= Condition OR CondTerm
+			|
+			CondTerm;
+
+CondTerm ::= CondTerm AND CondFact
+		|
+		CondFact;
+
+CondFact ::= Expr Relop Expr
+		|
+		Expr;
+
+Expr ::= Expr Addop Term
+		|
+		MINUS Term
+		|
+		Term;
+
+Term ::= Term Mulop Facotr
+		|
+		Factor;
+
+Factor ::= Designator
+		|
+		Designator ActParsParens
+		|
+		NUMBER
+		|
+		CHAR
+		|
+		BOOL
+		|
+		NEW Type LBRACKET Expr RBRACKET
+		|
+		NEW Type LBRACKET Expr RBRACKET LBRACKET Expr RBRACKET
+		|
+		NEW Type ActParsParens
+		|
+		LPAREN Expr RPAREN;
+
+Designator ::= IDENT
+			|
+			Designator DOT IDENT
+			|
+			Designator LBRACKET Expr RBRACKET;
+
+Label ::= IDENT;
+
+Assignop ::= EQUAL;
+
+Relop ::= EQ
+		|
+		NEQ
+		|
+		RANGLE
+		|
+		BEQ
+		|
+		LANGLE
+		|
+		LEQ;
+
+Addop ::= PLUS 
+		|
+		MINUS;
+
+Mulop ::= STAR
+		|
+		SLASH
+		|
+		PERCENT;
+

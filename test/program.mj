@@ -4,7 +4,7 @@ const int size = 10;
 class Table {
 	int pos[], neg[], factor;
 	{
-		Table(int factor) {this.factor = factor;}
+		//Table(int factor) {this.factor = factor;} // ovo ne postoji u nivou B.
 		void putp (int a, int idx) { this.pos[idx] = a; }
 		void putn (int a, int idx) { this.neg[idx] = a; }
 		int getp (int idx) { return pos[idx]; }
@@ -35,7 +35,7 @@ Int rows, columns;
 		val.neg = new int [size];
 		read(x);
 
-		[i,,x] = arr;
+		//[i,,x] = arr; // ovo ne postoji u projektu za jul.
 		while (i<size) {
 			val.putp(0, i);
 			val.putn(0, i);
@@ -52,9 +52,9 @@ Int rows, columns;
 			{
 				val.putp(val.getp(x)+1);
 			}
-			else if (‐size < x && x < 0)
+			else if (-size < x && x < 0)
 			{
-				val.putn(val.getn(‐x)+1);
+				val.putn(val.getn(-x)+1);
 			}
 			read(x);
 		}

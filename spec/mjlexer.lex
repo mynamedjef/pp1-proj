@@ -24,6 +24,7 @@ import java_cup.runtime.Symbol;
 %column
 
 %xstate COMMENT
+%xstate LONGCOMMENT
 
 %eofval{
 	return new_symbol(sym.EOF);
@@ -79,10 +80,17 @@ import java_cup.runtime.Symbol;
 "||"       { return new_symbol(sym.OR, yytext()); }
 "}"        { return new_symbol(sym.RBRACE, yytext()); }
 "program"  { return new_symbol(sym.PROGRAM, yytext()); }
+"true"     { return new_symbol(sym.BOOL, true); }
+"false"    { return new_symbol(sym.BOOL, false); }
 
 "//" {yybegin(COMMENT);}
 <COMMENT> . {yybegin(COMMENT);}
 <COMMENT> "\n" { yybegin(YYINITIAL); }
+
+"/*" { yybegin(LONGCOMMENT); }
+<LONGCOMMENT> . { yybegin(LONGCOMMENT); }
+<LONGCOMMENT> "\n" { yybegin(LONGCOMMENT); }
+<LONGCOMMENT> "*/" { yybegin(YYINITIAL); }
 
 [0-9]+  { return new_symbol(sym.NUMBER, Integer.valueOf(yytext())); }
 "'"[\040-\176]"'" { return new_symbol(sym.CHAR, yytext().charAt(1)); }

@@ -21,14 +21,16 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	public void report_error(String message, SyntaxNode node) {
 		errorDetected = true;
-		String err = Colors.ANSI_RED + "Semanticka greska (" +
-				Colors.ANSI_RESET +	node.getLine() + Colors.ANSI_RED + "): ";
+		String cls = "\t<" + Colors.ANSI_RESET + node.getClass().getSimpleName() + Colors.ANSI_RED + ">\t\t";
+		String err = Colors.ANSI_RED + "Semantika (" +
+				Colors.ANSI_RESET +	node.getLine() + Colors.ANSI_RED + "): " + cls;
 		log.error(err + message + Colors.ANSI_RESET);
 	}
 
 	public void report_info(String message, SyntaxNode node) {
-		String err = Colors.ANSI_GREEN + "Info (" +
-				Colors.ANSI_RESET +	node.getLine() + Colors.ANSI_GREEN + "): ";
+		String cls = "\t<" + Colors.ANSI_RESET + node.getClass().getSimpleName() + Colors.ANSI_GREEN + ">\t\t";
+		String err = Colors.ANSI_GREEN + "Info      (" +
+				Colors.ANSI_RESET +	node.getLine() + Colors.ANSI_GREEN + "): " + cls;
 		log.info(err + message + Colors.ANSI_RESET);
 	}
 

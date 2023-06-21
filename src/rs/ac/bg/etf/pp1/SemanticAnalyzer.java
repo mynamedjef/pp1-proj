@@ -14,7 +14,9 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	public boolean errorDetected = false;
 
+	private Obj currentMethod = null;
 	private Struct declarationType = null;
+	private Struct returnType = null;
 	private int nVars = -1;
 
 	public void report_error(String message, SyntaxNode node) {
@@ -148,5 +150,148 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	public void visit(FormParMatrix form) {
 		processFormPars(form, form.getName(), declare_matrix(form.getType().struct), "matrica");
+	}
+
+	// -------------------------------------- MethodDecl --------------------------------------------
+
+	public void visit(MethodDecl method) {
+		boolean b2 = returnType != null && currentMethod.getType() != returnType;
+		if (b2 || (returnType == null && currentMethod.getType() != Tab.noType)) {
+			report_error("metoda [" + currentMethod.getName() + "] mora imati return naredbu " +
+				"tipa " + currentMethod.getType().getKind(), method);
+		}
+
+		Tab.chainLocalSymbols(currentMethod);
+		Tab.closeScope();
+
+		currentMethod = null;
+		returnType = null;
+	}
+
+	public void processMethod(MethodTypeAndName method, String name, Struct type) {
+		if (Tab.currentScope.findSymbol(name) != null) {
+			report_error("Metoda [" + name + "] je vec definisana", method);
+			return;
+		}
+
+		currentMethod = Tab.insert(Obj.Meth, name, type);
+		Tab.openScope();
+	}
+
+	public void visit(MethodTypeAndNameNonvoid method) {
+		processMethod(method, method.getName(), method.getType().struct);
+	}
+
+	public void visit(MethodTypeAndNameVoid method) {
+		processMethod(method, method.getName(), Tab.noType);
+	}
+
+	// ---------------
+
+	public void visit(MatchedReturnExpr matched) {
+		if (currentMethod == null) {
+			report_error("return ne moze biti van funkcije", matched);
+			return;
+		}
+
+		returnType = matched.getExpr().struct;
+	}
+
+	// -------------------------------------- Expr --------------------------------------------------
+
+	public void visit(ExprAddop expr) {
+		if (expr.getExpr().struct != Tab.intType || expr.getTerm().struct != Tab.intType) {
+			report_error("tokom Addop expr i term moraju biti oba tipa int", expr);
+			expr.struct = Tab.noType;
+			return;
+		}
+		expr.struct = Tab.intType;
+	}
+
+	public void visit(ExprNegative expr) {
+		if (expr.getTerm().struct != Tab.intType) {
+			report_error("izraz unarnog minusa mora biti int tipa", expr);
+			expr.struct = Tab.noType;
+			return;
+		}
+		expr.struct = Tab.intType;
+	}
+
+	public void visit(ExprTerm expr) {
+		expr.struct = expr.getTerm().struct;
+	}
+
+	// -------------------------------------- Term --------------------------------------------------
+
+	public void visit(TermMulop term) {
+		if (term.getTerm().struct != Tab.intType || term.getFactor().struct != Tab.intType) {
+			report_error("tokom Mulop term i factor moraju biti oba tipa int", term);
+			term.struct = Tab.noType;
+			return;
+		}
+		term.struct = Tab.intType;
+	}
+
+	public void visit(TermFactor term) {
+		term.struct = term.getFactor().struct;
+	}
+
+	// -------------------------------------- Factor ------------------------------------------------
+
+	public void visit(FactorDesignator factor) {
+		Obj obj = Tab.find(factor.getDesignator().obj.getName());
+		if (obj == Tab.noObj || obj == null) {
+			report_error("Designator [" + obj.getName() + "] ne postoji" + ((obj!=null)?'1':'0'), factor);
+			factor.struct = Tab.noType;
+			return;
+		}
+		factor.struct = obj.getType();
+	}
+
+	public void visit(FactorFuncCall factor) {
+
+	}
+
+	public void visit(FactorExpr factor) {
+		factor.struct = factor.getExpr().struct;
+	}
+
+	public void visit(FactorConst factor) {
+		factor.struct = factor.getConstOne().struct;
+	}
+
+	public void visit(FactorNewArray factor) {
+		if (factor.getExpr().struct != Tab.intType) {
+			report_error("Izraz indeksiranja mora biti tipa int", factor);
+			factor.struct = Tab.noType;
+			return;
+		}
+		factor.struct = new Struct(Struct.Array, factor.getType().struct);
+	}
+
+	public void visit(FactorNewMatrix factor) {
+		if (factor.getExpr().struct != Tab.intType || factor.getExpr1().struct != Tab.intType) {
+			report_error("Izraz indeksiranja mora biti tipa int", factor);
+			factor.struct = Tab.noType;
+			return;
+		}
+		factor.struct = new Struct(Struct.Array, new Struct(Struct.Array, factor.getType().struct));
+	}
+
+	// -------------------------------------- Designator --------------------------------------------
+
+	public void visit(DesignatorName desig) {
+		desig.obj = Tab.find(desig.getName());
+		if (desig.obj == Tab.noObj) {
+			report_error("Ime designatora [" + desig.getName() + "] ne postoji", desig);
+		}
+	}
+
+	public void visit(DesignatorArray desig) {
+		desig.obj = desig.getDesignator().obj;
+		if (desig.getExpr().struct != Tab.intType) {
+			report_error("Tip izraza kojim se indeksira promenljiva [" + desig.obj.getName() + "] mora biti int", desig);
+			desig.obj = Tab.noObj;
+		}
 	}
 }

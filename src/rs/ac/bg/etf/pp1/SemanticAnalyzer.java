@@ -309,4 +309,41 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	// -------------------------------- DesignatorStatement -----------------------------------------
+
+	// TODO ZA MATRICU
+	public void visit(DesignatorStatementAssign desig) {
+		Obj d = desig.getDesignator().obj;
+		Struct e = desig.getExpr().struct;
+
+		if (!e.assignableTo(d.getType())) {
+			report_error("tip promenljive [" + d.getName() + "] se ne poklapa sa tipom dodeljene vrednosti", desig);
+		}
+		if (d.getKind() != Obj.Var && d.getKind() != Obj.Elem) {
+			report_error("designator [" + d.getName() + "] mora biti promenljiva ili element niza/matrice", desig);
+		}
+	}
+
+	public void visit(DesignatorStatementFuncCall desig) {
+		Obj obj = desig.getDesignator().obj;
+
+		if (obj.getKind() != Obj.Meth) {
+			report_error("moze se pozvati samo funkcija", desig);
+		}
+	}
+
+	public void visit(DesignatorStatementIncr desig) {
+		Obj obj = desig.getDesignator().obj;
+
+		if (obj.getType() != Tab.intType || (obj.getKind() != Obj.Var && obj.getKind() != Obj.Elem)) {
+			report_error("moze se inkrementirati samo integer", desig);
+		}
+	}
+
+	public void visit(DesignatorStatementDecr desig) {
+		Obj obj = desig.getDesignator().obj;
+
+		if (obj.getType() != Tab.intType || (obj.getKind() != Obj.Var && obj.getKind() != Obj.Elem)) {
+			report_error("moze se dekrementirati samo integer", desig);
+		}
+	}
 }

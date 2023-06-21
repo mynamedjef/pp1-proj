@@ -185,13 +185,13 @@ StatementList ::= StatementList Statement
 				|
 				;
 
-DesignatorStatement ::= Designator Assignop Expr
+DesignatorStatement ::= (DesignatorStatementAssign) Designator Assignop Expr
 					|
-					Designator ActParsParens
+					(DesignatorStatementFuncCall) Designator ActParsParens
 					|
-					Designator INCR
+					(DesignatorStatementIncr) Designator INCR
 					|
-					Designator DECR;
+					(DesignatorStatementDecr) Designator DECR;
 
 ActPars ::= ActPars COMMA Expr
 		|

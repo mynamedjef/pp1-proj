@@ -55,11 +55,11 @@ terminal Integer NUMBER;
 terminal String IDENT;
 terminal Character CHAR;
 
-nonterminal ActPars, ActParsParens, Addop, Assignop;
+nonterminal ActPar, ActPars, ActParsParens, Addop, Assignop;
 nonterminal Condition, CondFact, ConditionIf, CondTerm;
 nonterminal ConstAssign, ConstDecl, ConstList;
 nonterminal DesignatorStatement, FormPar;
-nonterminal FormPars, FormParsParens, FunctionCall, Label, Matched, MethodTypeAndName;
+nonterminal FormPars, FormParsParens, FunctionCall, FunctionName, Label, Matched, MethodTypeAndName;
 nonterminal MethodDecl, MethodDeclList, Mulop;
 nonterminal ProgHeadList, ProgHead, Relop, Statement, StatementList;
 nonterminal Unmatched, VarDecl, VarDeclList, VarList;
@@ -193,11 +193,15 @@ DesignatorStatement ::= (DesignatorStatementAssign) Designator Assignop Expr
 					|
 					(DesignatorStatementDecr) Designator DECR;
 
-ActPars ::= ActPars COMMA Expr
+ActPars ::= ActPars COMMA ActPar
 		|
-		Expr;
+		ActPar;
 
-FunctionCall ::= (FunctionCall) Designator ActParsParens;
+ActPar ::= (ActPar) Expr;
+
+FunctionCall ::= (FunctionCall) FunctionName ActParsParens;
+
+FunctionName ::= (FunctionName) Designator;
 
 ActParsParens ::= LPAREN ActPars RPAREN
 				|

@@ -2,6 +2,7 @@ package rs.ac.bg.etf.pp1;
 
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.Stack;
 
 import org.apache.log4j.Logger;
 
@@ -34,23 +35,21 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public static Struct booleanType = Tab.insert(Obj.Type, "bool", new Struct(Struct.Bool)).getType();
 
 	public static String structToString(Struct s) {
-		switch(s.getKind()) {
-
-		case 0:	return "NULL";
-		case 1: return "int";
-		case 2: return "char";
-		case 3: return "array";
-		case 4: return "class";
-		case 5: return "bool";
-		default: return "error";
-
+		String suffix = "";
+		while (s.getKind() == Struct.Array) {
+			s = s.getElemType();
+			suffix += "[]";
 		}
-	}
 
-	public void printAllFunctionDecls() {
-		for (String name : allFunctions.keySet()) {
-			String value = allFunctions.get(name).toString();
-			System.out.println("----- " + name + " -----\n" + value);
+		switch(s.getKind()) {
+		case 0:	return "NULL"+suffix;
+		case 1: return "int"+suffix;
+		case 2: return "char"+suffix;
+		case 3: return "array"+suffix;
+		case 4: return "class"+suffix;
+		case 5: return "bool"+suffix;
+		default: return "error"+suffix;
+
 		}
 	}
 
@@ -59,6 +58,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public boolean errorDetected = false;
 
 	HashMap<String, FunctionData> allFunctions = new HashMap<>();
+	Stack<ArrayList<Struct>> funStack = new Stack<>();
 
 	private Obj currentMethod = null;
 	private Struct declarationType = null;
@@ -78,6 +78,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		String err = Colors.ANSI_GREEN + "Info      (" +
 				Colors.ANSI_RESET +	node.getLine() + Colors.ANSI_GREEN + "): " + cls;
 		log.info(err + message + Colors.ANSI_RESET);
+	}
+
+	public void printAllFunctionDecls() {
+		for (String name : allFunctions.keySet()) {
+			String value = allFunctions.get(name).toString();
+			System.out.println("----- " + name + " -----\n" + value);
+		}
 	}
 
 	private Struct declare_array(Struct type) {
@@ -300,12 +307,39 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		factor.struct = obj.getType();
 	}
 
+	public void funcCall(Obj obj, SyntaxNode node) {
+		report_info("poziv f-je [" + obj.getName() + ']', node);
+
+		if (obj.getKind() != Obj.Meth) {
+			report_error("samo se funkcije mogu pozivati", node);
+			return;
+		}
+
+		ArrayList<Struct> curr = funStack.pop();
+		FunctionData fd = allFunctions.get(obj.getName());
+		ArrayList<Struct> supposed = fd.arguments;
+		if (curr.size() != supposed.size()) {
+			report_error("funkcija [" + obj.getName() + "] ocekuje [" + fd.parCount + "] parametara " +
+					"a prosledjeno joj je [" + curr.size() + "]", node);
+			return;
+		}
+
+		for (int i = 0; i < curr.size(); i++) {
+			if (!curr.get(i).equals(supposed.get(i))) {
+				report_error((i+1)+". parametar funkcije [" + obj.getName() + "] ne odgovara. " +
+						"ocekuje se tip (" + structToString(supposed.get(i)) + ") a dobijen je tip (" +
+						structToString(curr.get(i)) + ')', node);
+			}
+		}
+	}
+
 	public void visit(FactorFuncCall factor) {
-		Obj obj = factor.getFunctionCall().getDesignator().obj;
+		Obj obj = factor.getFunctionCall().getFunctionName().getDesignator().obj;
+		factor.struct = obj.getType();
 		if (obj.getType() == Tab.noType) {
 			report_error("void funkcija ne moze biti u izrazu", factor);
 		}
-		factor.struct = obj.getType();
+		funcCall(obj, factor);
 	}
 
 	public void visit(FactorConst factor) {
@@ -373,12 +407,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	public void visit(DesignatorStatementFuncCall desig) {
-		Obj obj = desig.getFunctionCall().getDesignator().obj;
-
-		if (obj.getKind() != Obj.Meth) {
-			report_error("samo se funkcije mogu pozivati", desig);
-			return;
-		}
+		Obj obj = desig.getFunctionCall().getFunctionName().getDesignator().obj;
+		funcCall(obj, desig);
 	}
 
 	public void visit(DesignatorStatementIncr desig) {
@@ -416,5 +446,19 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		if (cond.getExpr().struct != booleanType) {
 			report_error("uslov mora biti tipa boolean", cond);
 		}
+	}
+
+	public void visit(ActPar act) {
+		report_info("par " + structToString(act.getExpr().struct), act);
+		ArrayList<Struct> l = funStack.peek();
+		l.add(act.getExpr().struct);
+	}
+
+	// ----------------------------------- FunctionCall ---------------------------------------------
+
+	public void visit(FunctionName fun) {
+		ArrayList<Struct> l = new ArrayList<>();
+		funStack.push(l);
+		report_info("fun " + fun.getDesignator().obj.getName(), fun);
 	}
 }

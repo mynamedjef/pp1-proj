@@ -62,7 +62,7 @@ nonterminal DesignatorStatement, FormPar;
 nonterminal FormPars, FormParsParens, FunctionCall, FunctionName, Label, Matched, MethodTypeAndName;
 nonterminal MethodDecl, MethodDeclList, Mulop;
 nonterminal ProgHeadList, ProgHead, Relop, Statement, StatementList;
-nonterminal Unmatched, VarDecl, VarDeclList, VarList;
+nonterminal Unmatched, VarDecl, VarDeclList, VarList, WhileStart;
 
 terminal AND, BEQ, BREAK;
 terminal CLASS, COMMA, CONST, CONT, DECR;
@@ -155,17 +155,17 @@ Unmatched ::= IF ConditionIf Statement
 			|
 			IF ConditionIf Matched ELSE Unmatched
 			|
-			WHILE ConditionIf Unmatched;
+			(UnmatchedWhile) WhileStart ConditionIf Unmatched;
 
 Matched ::= DesignatorStatement SEMI
 			|
 			IF ConditionIf Matched ELSE Matched
 			|
-			WHILE ConditionIf Matched
+			(MatchedWhile) WhileStart ConditionIf Matched
 			|
-			BREAK SEMI
+			(MatchedBreak) BREAK SEMI
 			|
-			CONT SEMI
+			(MatchedContinue) CONT SEMI
 			|
 			(MatchedReturnExpr) RETURN Expr SEMI
 			|
@@ -180,6 +180,8 @@ Matched ::= DesignatorStatement SEMI
 			(MatchedMap) Designator DOT MAP LPAREN IDENT:iter LAMBDA Statement RPAREN SEMI
 			|
 			LBRACE StatementList RBRACE;
+
+WhileStart ::= (WhileStart) WHILE;
 			
 StatementList ::= StatementList Statement
 				|

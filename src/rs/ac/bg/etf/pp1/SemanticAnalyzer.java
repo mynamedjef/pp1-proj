@@ -63,6 +63,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	private Obj currentMethod = null;
 	private Struct declarationType = null;
 	private Struct returnType = null;
+	private int loopCount = 0;
 	private int nVars = -1;
 
 	public void report_error(String message, SyntaxNode node) {
@@ -464,22 +465,27 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	// ----------------------------------- Statements -----------------------------------------------
 
-	public void visit(MatchedMap stmt) {
-		Obj obj = stmt.getDesignator().obj;
-		Struct type = obj.getType();
-		if (type.getKind() != Struct.Array ||
-			(type.getKind() == Struct.Array && type.getElemType().getKind() == Struct.Array))
-		{
-			report_error("promenljiva [" + obj.getName() +
-					"] mora biti jednodimenzionalni niz ugradjenog tipa u map iskazu", stmt);
+	public void visit(UnmatchedWhile stmt) {
+		loopCount--;
+	}
+
+	public void visit(MatchedWhile stmt) {
+		loopCount--;
+	}
+
+	public void visit(WhileStart stmt) {
+		loopCount++;
+	}
+
+	public void visit(MatchedBreak stmt) {
+		if (loopCount < 1) {
+			report_error("break iskaz ne sme biti van petlje", stmt);
 		}
-		Obj iter = Tab.find(stmt.getIter());
-		if (iter == Tab.noObj) {
-			report_error("identifikator [" + stmt.getIter() + "] ne postoji", stmt);
-			return;
-		}
-		if (!iter.getType().equals(obj.getType().getElemType())) {
-			report_error("tip identifikatora i tip niza [" + obj.getName() + "] se moraju poklapati", stmt);
+	}
+
+	public void visit(MatchedContinue stmt) {
+		if (loopCount < 1) {
+			report_error("continue iskaz ne sme biti van petlje", stmt);
 		}
 	}
 
@@ -502,6 +508,25 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		Struct type = obj.getType();
 		if (!type.equals(Tab.charType) && !type.equals(Tab.intType) && !type.equals(booleanType)) {
 			report_error("read iskaz mora biti [char, bool, int]. dat izraz: (" + structToString(type) + ')', stmt);
+		}
+	}
+
+	public void visit(MatchedMap stmt) {
+		Obj obj = stmt.getDesignator().obj;
+		Struct type = obj.getType();
+		if (type.getKind() != Struct.Array ||
+			(type.getKind() == Struct.Array && type.getElemType().getKind() == Struct.Array))
+		{
+			report_error("promenljiva [" + obj.getName() +
+					"] mora biti jednodimenzionalni niz ugradjenog tipa u map iskazu", stmt);
+		}
+		Obj iter = Tab.find(stmt.getIter());
+		if (iter == Tab.noObj) {
+			report_error("identifikator [" + stmt.getIter() + "] ne postoji", stmt);
+			return;
+		}
+		if (!iter.getType().equals(obj.getType().getElemType())) {
+			report_error("tip identifikatora i tip niza [" + obj.getName() + "] se moraju poklapati", stmt);
 		}
 	}
 }

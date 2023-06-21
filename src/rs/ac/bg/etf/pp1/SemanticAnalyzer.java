@@ -240,8 +240,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	public void visit(FactorDesignator factor) {
 		Obj obj = Tab.find(factor.getDesignator().obj.getName());
-		if (obj == Tab.noObj || obj == null) {
-			report_error("Designator [" + obj.getName() + "] ne postoji" + ((obj!=null)?'1':'0'), factor);
+		if (obj == Tab.noObj) {
+			report_error("Designator [" + obj.getName() + "] ne postoji", factor);
 			factor.struct = Tab.noType;
 			return;
 		}
@@ -249,11 +249,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	public void visit(FactorFuncCall factor) {
-
-	}
-
-	public void visit(FactorExpr factor) {
-		factor.struct = factor.getExpr().struct;
+		Obj obj = factor.getDesignator().obj;
+		if (obj.getType() == Tab.noType) {
+			report_error("void funkcija ne moze biti u izrazu", factor);
+		}
+		factor.struct = obj.getType();
 	}
 
 	public void visit(FactorConst factor) {
@@ -266,7 +266,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			factor.struct = Tab.noType;
 			return;
 		}
-		factor.struct = new Struct(Struct.Array, factor.getType().struct);
+		factor.struct = declare_array(factor.getType().struct);
 	}
 
 	public void visit(FactorNewMatrix factor) {
@@ -275,7 +275,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			factor.struct = Tab.noType;
 			return;
 		}
-		factor.struct = new Struct(Struct.Array, new Struct(Struct.Array, factor.getType().struct));
+		factor.struct = declare_matrix(factor.getType().struct);
+	}
+
+	public void visit(FactorExpr factor) {
+		factor.struct = factor.getExpr().struct;
 	}
 
 	// -------------------------------------- Designator --------------------------------------------
@@ -288,10 +292,19 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	public void visit(DesignatorArray desig) {
-		desig.obj = desig.getDesignator().obj;
+		Obj obj = desig.getDesignator().obj;
+		desig.obj = Tab.noObj;
 		if (desig.getExpr().struct != Tab.intType) {
 			report_error("Tip izraza kojim se indeksira promenljiva [" + desig.obj.getName() + "] mora biti int", desig);
-			desig.obj = Tab.noObj;
+			return;
 		}
+		if (obj.getType().getKind() != Struct.Array) {
+			report_error("Promenljiva [" + obj.getName() + "] mora biti tipa niz", desig);
+			return;
+		}
+
+		desig.obj = new Obj(Obj.Elem, obj.getName(), obj.getType().getElemType());
 	}
+
+	// -------------------------------- DesignatorStatement -----------------------------------------
 }

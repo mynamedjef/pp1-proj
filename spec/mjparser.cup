@@ -213,9 +213,9 @@ CondTerm ::= CondTerm AND CondFact
 		|
 		CondFact;
 
-CondFact ::= Expr Relop Expr
+CondFact ::= (CondFactRelop) Expr Relop Expr
 		|
-		Expr;
+		(CondFactExpr) Expr;
 
 Expr ::= (ExprAddop) Expr Addop Term
 		|
@@ -247,9 +247,9 @@ Label ::= IDENT;
 
 Assignop ::= EQUAL;
 
-Relop ::= EQ
+Relop ::= (RelopEQ) EQ
 		|
-		NEQ
+		(RelopNEQ) NEQ
 		|
 		RANGLE
 		|

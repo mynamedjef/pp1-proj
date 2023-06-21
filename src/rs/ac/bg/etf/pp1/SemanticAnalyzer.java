@@ -241,7 +241,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	// -------------------------------------- Factor ------------------------------------------------
 
 	public void visit(FactorDesignator factor) {
-		Obj obj = Tab.find(factor.getDesignator().obj.getName());
+		Obj obj = factor.getDesignator().obj;
 		if (obj == Tab.noObj) {
 			report_error("Designator [" + obj.getName() + "] ne postoji", factor);
 			factor.struct = Tab.noType;
@@ -346,4 +346,26 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			report_error("moze se dekrementirati samo integer", desig);
 		}
 	}
+
+	// ----------------------------------- CondFact -------------------------------------------------
+
+	public void visit(CondFactRelop cond) {
+		Struct s1 = cond.getExpr().struct;
+		Struct s2 = cond.getExpr1().struct;
+		if (!s1.compatibleWith(s2)) {
+			report_error("nekompatibilni tipovi u poredjenju", cond);
+			return;
+		}
+		Relop r = cond.getRelop();
+		if (s1.getKind() == Struct.Array && !(r instanceof RelopEQ) && !(r instanceof RelopNEQ)) {
+			report_error("nizovi mogu da se porede samo sa EQ i NEQ", cond);
+		}
+	}
+
+	public void visit(CondFactExpr cond) {
+		if (cond.getExpr().struct != booleanType) {
+			report_error("uslov mora biti tipa boolean", cond);
+		}
+	}
+
 }

@@ -49,7 +49,7 @@ terminal Integer NUMBER;
 terminal String IDENT;
 terminal Character CHAR;
 
-nonterminal ActPars, ActParsParens, Addop, Assignop, ClassDecl, ClassOptExtends;
+nonterminal ActPars, ActParsParens, Addop, Assignop;
 nonterminal Condition, CondFact, ConditionIf, CondTerm;
 nonterminal ConstDecl, ConstOne, ConstList, Designator;
 nonterminal DesignatorStatement, Expr, Facotr, Factor, FormPar;
@@ -74,9 +74,7 @@ ProgHeadList ::= ProgHeadList ProgHead
 			|
 			;
 
-ProgHead ::= ClassDecl
-			|
-			VarDecl
+ProgHead ::= VarDecl
 			|
 			ConstDecl;
 
@@ -107,14 +105,6 @@ VarDeclSingle ::= IDENT
 				IDENT LBRACKET RBRACKET
 				|
 				IDENT LBRACKET RBRACKET LBRACKET RBRACKET;
-
-ClassDecl ::= CLASS IDENT ClassOptExtends LBRACE VarDeclList RBRACE
-			|
-			CLASS IDENT ClassOptExtends LBRACE VarDeclList LBRACE MethodDeclList RBRACE RBRACE;
-
-ClassOptExtends ::= EXTENDS Type
-				|
-				;
 
 MethodDeclList ::= MethodDeclList MethodDecl
 				|

@@ -30,6 +30,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		log.info(err + message + Colors.ANSI_RESET);
 	}
 
+	private Struct declare_array(Struct type) {
+		return new Struct(Struct.Array, type);
+	}
+
+	private Struct declare_matrix(Struct type) {
+		return new Struct(Struct.Array, declare_array(type));
+	}
 	// ======================================== VISITI =============================================
 
 	public void visit(ProgName progName) {
@@ -98,7 +105,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	// -------------------------------------- VarDecl -----------------------------------------------
 
 	public void processVarDecl(VarDeclSingle var, String name, Struct type, String msg) {
-		if (Tab.currentScope.findSymbol(name) == Tab.noObj) {
+		if (Tab.currentScope.findSymbol(name) != null) {
 			report_error("simbol [" + name + "] vec postoji u trenutnom scope-u", var);
 			return;
 		}
@@ -112,11 +119,34 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	public void visit(VarDeclArray var) {
-		processVarDecl(var, var.getName(), new Struct(Struct.Array, declarationType), "niz");
+		processVarDecl(var, var.getName(), declare_array(declarationType), "niz");
 	}
 
 	public void visit(VarDeclMatrix var) {
-		processVarDecl(var, var.getName(),
-				new Struct(Struct.Array, new Struct(Struct.Array, declarationType)), "matrica");
+		processVarDecl(var, var.getName(), declare_matrix(declarationType), "matrica");
+	}
+
+	// -------------------------------------- FormPars ----------------------------------------------
+
+	public void processFormPars(FormPar var, String name, Struct type, String msg) {
+		if (Tab.currentScope.findSymbol(name) != null) {
+			report_error("simbol [" + name + "] vec postoji u trenutnom scope-u", var);
+			return;
+		}
+
+		Tab.insert(Obj.Var, name, type);
+		report_info("formpar " + msg + " [" + name + "] deklarisan", var);
+	}
+
+	public void visit(FormParScalar form) {
+		processFormPars(form, form.getName(), form.getType().struct, "skalar");
+	}
+
+	public void visit(FormParArray form) {
+		processFormPars(form, form.getName(), declare_array(form.getType().struct), "niz");
+	}
+
+	public void visit(FormParMatrix form) {
+		processFormPars(form, form.getName(), declare_matrix(form.getType().struct), "matrica");
 	}
 }

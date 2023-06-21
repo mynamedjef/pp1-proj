@@ -139,11 +139,11 @@ FormParsParens ::= LPAREN FormPars RPAREN
 				|
 				LPAREN RPAREN;
 
-FormPar ::= Type IDENT
+FormPar ::= (FormParScalar) Type IDENT:name
 		|
-		Type IDENT LBRACKET RBRACKET
+		(FormParArray) Type IDENT:name LBRACKET RBRACKET
 		|
-		Type IDENT LBRACKET RBRACKET LBRACKET RBRACKET;
+		(FormParMatrix) Type IDENT:name LBRACKET RBRACKET LBRACKET RBRACKET;
 
 Type ::= (Type) IDENT:typeName;
 

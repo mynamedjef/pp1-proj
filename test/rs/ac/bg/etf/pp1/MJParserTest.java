@@ -14,6 +14,8 @@ import org.apache.log4j.xml.DOMConfigurator;
 
 import rs.ac.bg.etf.pp1.ast.Program;
 import rs.ac.bg.etf.pp1.util.Log4JUtils;
+import rs.etf.pp1.symboltable.Tab;
+import rs.etf.pp1.symboltable.concepts.Obj;
 
 public class MJParserTest {
 
@@ -44,12 +46,21 @@ public class MJParserTest {
 
 			// ispis prepoznatih programskih konstrukcija
 			RuleVisitor v = new RuleVisitor();
-			prog.traverseBottomUp(v); 
-	      
-			//log.info(" Print count calls = " + v.printCallCount);
+			//prog.traverseBottomUp(v);
 
-			log.info(" Deklarisanih promenljivih ima = " + v.varDeclCount);
+			Tab.init();
 			
+			SemanticAnalyzer sem = new SemanticAnalyzer();
+			prog.traverseBottomUp(sem);
+
+			log.info("===================================");
+			Tab.dump();
+
+			if (!p.errorDetected && !sem.errorDetected) {
+				log.info("Parsiranje uspesno zavrseno");
+			} else {
+				log.error("Parsiranje nije uspesno zavrseno");
+			}
 		} 
 		finally {
 			if (br != null) try { br.close(); } catch (IOException e1) { log.error(e1.getMessage(), e1); }

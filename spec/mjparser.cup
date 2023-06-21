@@ -7,6 +7,8 @@ import rs.ac.bg.etf.pp1.ast.*;
 
 parser code {:
 
+	boolean errorDetected;
+
 	Logger log = Logger.getLogger(getClass());
 
     // slede redefinisani metodi za prijavu gresaka radi izmene teksta poruke
@@ -25,6 +27,7 @@ parser code {:
     }
 
     public void report_error(String message, Object info) {
+    	errorDetected = true;
     	StringBuilder msg = new StringBuilder(message); 
     	if (info instanceof Symbol)
             msg.append (" na liniji ").append(((Symbol)info).left);
@@ -33,6 +36,9 @@ parser code {:
 		
 :}
 
+init with {:
+	errorDetected = false;
+:}
 
 scan with {:
 

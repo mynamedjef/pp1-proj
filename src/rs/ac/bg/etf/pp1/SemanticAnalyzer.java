@@ -216,7 +216,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		boolean b2 = returnType != null && currentMethod.getType() != returnType;
 		if (b2 || (returnType == null && currentMethod.getType() != Tab.noType)) {
 			report_error("metoda [" + currentMethod.getName() + "] mora imati return naredbu " +
-				"tipa " + currentMethod.getType().getKind(), method);
+				"tipa (" + structToString(currentMethod.getType()) + ')', method);
 		}
 
 		Tab.chainLocalSymbols(currentMethod);
@@ -480,6 +480,28 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 		if (!iter.getType().equals(obj.getType().getElemType())) {
 			report_error("tip identifikatora i tip niza [" + obj.getName() + "] se moraju poklapati", stmt);
+		}
+	}
+
+	public void visit(MatchedPrintExpr stmt) {
+		Struct type = stmt.getExpr().struct;
+		if (!type.equals(Tab.charType) && !type.equals(Tab.intType) && !type.equals(booleanType)) {
+			report_error("print izraz mora biti [char, bool, int]. dat izraz: (" + structToString(type) + ')', stmt);
+		}
+	}
+
+	public void visit(MatchedPrintNum stmt) {
+		Struct type = stmt.getExpr().struct;
+		if (!type.equals(Tab.charType) && !type.equals(Tab.intType) && !type.equals(booleanType)) {
+			report_error("print iskaz mora biti [char, bool, int]. dat izraz: (" + structToString(type) + ')', stmt);
+		}
+	}
+
+	public void visit(MatchedRead stmt) {
+		Obj obj = stmt.getDesignator().obj;
+		Struct type = obj.getType();
+		if (!type.equals(Tab.charType) && !type.equals(Tab.intType) && !type.equals(booleanType)) {
+			report_error("read iskaz mora biti [char, bool, int]. dat izraz: (" + structToString(type) + ')', stmt);
 		}
 	}
 }

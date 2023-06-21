@@ -171,11 +171,11 @@ Matched ::= DesignatorStatement SEMI
 			|
 			RETURN SEMI
 			|
-			READ LPAREN Designator RPAREN SEMI
+			(MatchedRead) READ LPAREN Designator RPAREN SEMI
 			|
-			PRINT LPAREN Expr RPAREN SEMI
+			(MatchedPrintExpr) PRINT LPAREN Expr RPAREN SEMI
 			|
-			PRINT LPAREN Expr COMMA NUMBER RPAREN SEMI
+			(MatchedPrintNum) PRINT LPAREN Expr COMMA NUMBER RPAREN SEMI
 			|
 			(MatchedMap) Designator DOT MAP LPAREN IDENT:iter LAMBDA Statement RPAREN SEMI
 			|

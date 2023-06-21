@@ -62,7 +62,7 @@ nonterminal DesignatorStatement, Expr, Factor, FormPar;
 nonterminal FormPars, FormParsParens, Label, Matched, MethodType;
 nonterminal MethodDecl, MethodDeclList, Mulop;
 nonterminal ProgHeadList, ProgHead, Relop, Statement, StatementList, Term;
-nonterminal Unmatched, VarDecl, VarDeclList, VarDeclSingle, VarList;
+nonterminal Unmatched, VarDecl, VarDeclList, VarList;
 
 terminal AND, BEQ, BREAK;
 terminal CLASS, COMMA, CONST, CONT, DECR;
@@ -74,7 +74,7 @@ terminal PLUS, PRINT, PROGRAM, RANGLE, RBRACE;
 terminal RBRACKET, READ, RETURN, RPAREN, SEMI;
 terminal SLASH, STAR, VOID, WHILE;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Obj ProgName, Program;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj ProgName, Program, VarDeclSingle;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Struct ConstOne, Type;
 
@@ -115,11 +115,11 @@ VarList ::= VarList COMMA VarDeclSingle
 		|
 		VarDeclSingle;
 
-VarDeclSingle ::= IDENT
+VarDeclSingle ::= (VarDeclScalar) IDENT:name
 				|
-				IDENT LBRACKET RBRACKET
+				(VarDeclArray) IDENT:name LBRACKET RBRACKET
 				|
-				IDENT LBRACKET RBRACKET LBRACKET RBRACKET;
+				(VarDeclMatrix) IDENT:name LBRACKET RBRACKET LBRACKET RBRACKET;
 
 MethodDeclList ::= MethodDeclList MethodDecl
 				|

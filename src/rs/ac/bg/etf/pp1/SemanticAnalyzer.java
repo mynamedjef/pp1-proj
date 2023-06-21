@@ -43,6 +43,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		Tab.closeScope();
 	}
 
+	// -------------------------------------- ConstDecl ---------------------------------------------
+
 	public void visit(ConstDecl cnst) {
 		declarationType = null;
 	}
@@ -91,5 +93,30 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 
 		declarationType = type.struct = typeNode.getType();
+	}
+
+	// -------------------------------------- VarDecl -----------------------------------------------
+
+	public void processVarDecl(VarDeclSingle var, String name, Struct type, String msg) {
+		if (Tab.currentScope.findSymbol(name) == Tab.noObj) {
+			report_error("simbol [" + name + "] vec postoji u trenutnom scope-u", var);
+			return;
+		}
+
+		Tab.insert(Obj.Var, name, type);
+		report_info(msg + " [" + name + "] deklarisana", var);
+	}
+
+	public void visit(VarDeclScalar var) {
+		processVarDecl(var, var.getName(), declarationType, "promenljiva");
+	}
+
+	public void visit(VarDeclArray var) {
+		processVarDecl(var, var.getName(), new Struct(Struct.Array, declarationType), "niz");
+	}
+
+	public void visit(VarDeclMatrix var) {
+		processVarDecl(var, var.getName(),
+				new Struct(Struct.Array, new Struct(Struct.Array, declarationType)), "matrica");
 	}
 }

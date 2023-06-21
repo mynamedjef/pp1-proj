@@ -57,11 +57,11 @@ terminal Character CHAR;
 
 nonterminal ActPars, ActParsParens, Addop, Assignop;
 nonterminal Condition, CondFact, ConditionIf, CondTerm;
-nonterminal ConstDecl, ConstOne, ConstList, Designator;
-nonterminal DesignatorStatement, Expr, Facotr, Factor, FormPar;
+nonterminal ConstAssign, ConstDecl, ConstList, Designator;
+nonterminal DesignatorStatement, Expr, Factor, FormPar;
 nonterminal FormPars, FormParsParens, Label, Matched, MethodType;
 nonterminal MethodDecl, MethodDeclList, Mulop;
-nonterminal Program, ProgHeadList, ProgHead, Relop, Statement, StatementList, Term, Type;
+nonterminal ProgHeadList, ProgHead, Relop, Statement, StatementList, Term;
 nonterminal Unmatched, VarDecl, VarDeclList, VarDeclSingle, VarList;
 
 terminal AND, BEQ, BREAK;
@@ -74,7 +74,14 @@ terminal PLUS, PRINT, PROGRAM, RANGLE, RBRACE;
 terminal RBRACKET, READ, RETURN, RPAREN, SEMI;
 terminal SLASH, STAR, VOID, WHILE;
 
-Program ::= PROGRAM IDENT ProgHeadList LBRACE MethodDeclList RBRACE;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj ProgName, Program;
+
+nonterminal rs.etf.pp1.symboltable.concepts.Struct ConstOne, Type;
+
+
+Program ::= (Program) PROGRAM ProgName:p ProgHeadList LBRACE MethodDeclList RBRACE;
+
+ProgName ::= (ProgName) IDENT:progName;
 
 ProgHeadList ::= ProgHeadList ProgHead
 			|
@@ -84,17 +91,19 @@ ProgHead ::= VarDecl
 			|
 			ConstDecl;
 
-ConstDecl ::= CONST Type ConstList SEMI;
+ConstDecl ::= (ConstDecl) CONST Type ConstList SEMI;
 
-ConstOne ::= NUMBER
+ConstOne ::= (ConstOneNumber) NUMBER
 			|
-			BOOL
+			(ConstOneBool) BOOL
 			|
-			CHAR;
+			(ConstOneChar) CHAR;
 
-ConstList ::= ConstList COMMA IDENT EQUAL ConstOne
+ConstList ::= ConstList COMMA ConstAssign
 			|
-			IDENT EQUAL ConstOne;
+			ConstAssign;
+
+ConstAssign ::= (ConstAssign) IDENT:name EQUAL ConstOne;
 
 VarDeclList ::= VarDeclList VarDecl
 			|
@@ -136,7 +145,7 @@ FormPar ::= Type IDENT
 		|
 		Type IDENT LBRACKET RBRACKET LBRACKET RBRACKET;
 
-Type ::= IDENT;
+Type ::= (Type) IDENT:typeName;
 
 Statement ::= Matched
 			|
@@ -214,7 +223,7 @@ Expr ::= Expr Addop Term
 		|
 		Term;
 
-Term ::= Term Mulop Facotr
+Term ::= Term Mulop Factor
 		|
 		Factor;
 
@@ -222,11 +231,7 @@ Factor ::= Designator
 		|
 		Designator ActParsParens
 		|
-		NUMBER
-		|
-		CHAR
-		|
-		BOOL
+		ConstOne
 		|
 		NEW Type LBRACKET Expr RBRACKET
 		|

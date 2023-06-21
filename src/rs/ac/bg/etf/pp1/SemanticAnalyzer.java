@@ -1,5 +1,8 @@
 package rs.ac.bg.etf.pp1;
 
+import java.util.HashMap;
+import java.util.ArrayList;
+
 import org.apache.log4j.Logger;
 
 import rs.ac.bg.etf.pp1.ast.*;
@@ -8,11 +11,54 @@ import rs.etf.pp1.symboltable.concepts.*;
 
 public class SemanticAnalyzer extends VisitorAdaptor {
 
+	class FunctionData {
+		int parCount = 0;
+		ArrayList<Struct> arguments = new ArrayList<>();
+
+		public void insert(Struct s) {
+			parCount++;
+			arguments.add(s);
+		}
+
+		public String toString() {
+			String s = "";
+			for (int i = 0; i < arguments.size(); i++) {
+				s += "" + (i+1) + ": " + structToString(arguments.get(i)) + '\n'; 
+			}
+			return s.equals("") ?
+					"no formal parameters\n" :
+					s;
+		}
+	}
+
 	public static Struct booleanType = Tab.insert(Obj.Type, "bool", new Struct(Struct.Bool)).getType();
+
+	public static String structToString(Struct s) {
+		switch(s.getKind()) {
+
+		case 0:	return "NULL";
+		case 1: return "int";
+		case 2: return "char";
+		case 3: return "array";
+		case 4: return "class";
+		case 5: return "bool";
+		default: return "error";
+
+		}
+	}
+
+	public void printAllFunctionDecls() {
+		for (String name : allFunctions.keySet()) {
+			String value = allFunctions.get(name).toString();
+			System.out.println("----- " + name + " -----\n" + value);
+		}
+	}
 
 	Logger log = Logger.getLogger(getClass());
 
 	public boolean errorDetected = false;
+
+	HashMap<String, FunctionData> allFunctions = new HashMap<>();
 
 	private Obj currentMethod = null;
 	private Struct declarationType = null;
@@ -140,6 +186,9 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 		Tab.insert(Obj.Var, name, type);
 		report_info("formpar " + msg + " [" + name + "] deklarisan", var);
+
+		FunctionData fd = allFunctions.get(currentMethod.getName());
+		fd.insert(type);
 	}
 
 	public void visit(FormParScalar form) {
@@ -177,6 +226,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 
 		currentMethod = Tab.insert(Obj.Meth, name, type);
+		allFunctions.put(name, new FunctionData());
 		Tab.openScope();
 	}
 
@@ -251,7 +301,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	public void visit(FactorFuncCall factor) {
-		Obj obj = factor.getDesignator().obj;
+		Obj obj = factor.getFunctionCall().getDesignator().obj;
 		if (obj.getType() == Tab.noType) {
 			report_error("void funkcija ne moze biti u izrazu", factor);
 		}
@@ -310,7 +360,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	// -------------------------------- DesignatorStatement -----------------------------------------
 
-	// TODO ZA MATRICU
 	public void visit(DesignatorStatementAssign desig) {
 		Obj d = desig.getDesignator().obj;
 		Struct e = desig.getExpr().struct;
@@ -324,10 +373,11 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	public void visit(DesignatorStatementFuncCall desig) {
-		Obj obj = desig.getDesignator().obj;
+		Obj obj = desig.getFunctionCall().getDesignator().obj;
 
 		if (obj.getKind() != Obj.Meth) {
-			report_error("moze se pozvati samo funkcija", desig);
+			report_error("samo se funkcije mogu pozivati", desig);
+			return;
 		}
 	}
 
@@ -367,5 +417,4 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			report_error("uslov mora biti tipa boolean", cond);
 		}
 	}
-
 }

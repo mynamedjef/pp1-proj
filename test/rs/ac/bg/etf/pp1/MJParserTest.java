@@ -61,6 +61,9 @@ public class MJParserTest {
 			} else {
 				log.error("Parsiranje nije uspesno zavrseno");
 			}
+
+			log.info("===================================");
+			sem.printAllFunctionDecls();
 		} 
 		finally {
 			if (br != null) try { br.close(); } catch (IOException e1) { log.error(e1.getMessage(), e1); }

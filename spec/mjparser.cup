@@ -59,7 +59,7 @@ nonterminal ActPars, ActParsParens, Addop, Assignop;
 nonterminal Condition, CondFact, ConditionIf, CondTerm;
 nonterminal ConstAssign, ConstDecl, ConstList;
 nonterminal DesignatorStatement, FormPar;
-nonterminal FormPars, FormParsParens, Label, Matched, MethodTypeAndName;
+nonterminal FormPars, FormParsParens, FunctionCall, Label, Matched, MethodTypeAndName;
 nonterminal MethodDecl, MethodDeclList, Mulop;
 nonterminal ProgHeadList, ProgHead, Relop, Statement, StatementList;
 nonterminal Unmatched, VarDecl, VarDeclList, VarList;
@@ -187,7 +187,7 @@ StatementList ::= StatementList Statement
 
 DesignatorStatement ::= (DesignatorStatementAssign) Designator Assignop Expr
 					|
-					(DesignatorStatementFuncCall) Designator ActParsParens
+					(DesignatorStatementFuncCall) FunctionCall
 					|
 					(DesignatorStatementIncr) Designator INCR
 					|
@@ -196,6 +196,8 @@ DesignatorStatement ::= (DesignatorStatementAssign) Designator Assignop Expr
 ActPars ::= ActPars COMMA Expr
 		|
 		Expr;
+
+FunctionCall ::= (FunctionCall) Designator ActParsParens;
 
 ActParsParens ::= LPAREN ActPars RPAREN
 				|
@@ -229,7 +231,7 @@ Term ::= (TermMulop) Term Mulop Factor
 
 Factor ::= (FactorDesignator) Designator
 		|
-		(FactorFuncCall) Designator ActParsParens
+		(FactorFuncCall) FunctionCall
 		|
 		(FactorConst) ConstOne
 		|

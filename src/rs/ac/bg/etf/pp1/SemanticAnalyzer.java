@@ -70,13 +70,16 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	private Struct declarationType = null;
 	private Struct returnType = Tab.noType;
 	private int loopCount = 0;
-	private int nVars = -1;
+	public int nVars = -1;
 
 	public String create_message(String message, SyntaxNode node, String color, String msgType) {
 		int size = 30 - node.getClass().getSimpleName().length(); // ni jedna klasa nece valjda imati duze ime od 30
 		String pad = new String(new char[size]).replace('\0', ' ');
 
-		String cls = String.format("\t<%s%s%s>", Colors.ANSI_RESET, node.getClass().getSimpleName(), color);
+		int size2 = 12 - msgType.length() - String.format("%d", node.getLine()).length();
+		String pad2 = new String(new char[size2]).replace('\0', ' ');
+
+		String cls = String.format("%s<%s%s%s>", pad2, Colors.ANSI_RESET, node.getClass().getSimpleName(), color);
 		String line = String.format("%s%s (%s%d%s): ", color, msgType, Colors.ANSI_RESET, node.getLine(), color);
 		return line + cls + pad + message + Colors.ANSI_RESET;
 	}

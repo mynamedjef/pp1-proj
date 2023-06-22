@@ -16,6 +16,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		int parCount = 0;
 		ArrayList<Struct> arguments = new ArrayList<>();
 
+		public FunctionData() {}
+
+		public FunctionData(Struct s) {
+			insert(s);
+		}
+
 		public void insert(Struct s) {
 			parCount++;
 			arguments.add(s);
@@ -97,7 +103,17 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 	// ======================================== VISITI =============================================
 
+	public void addBuiltinMethods() {
+		FunctionData chr = new FunctionData(Tab.intType);
+		FunctionData ord = new FunctionData(Tab.charType);
+		FunctionData len = new FunctionData(Tab.noType);
+		allFunctions.put("chr", chr);
+		allFunctions.put("ord", ord);
+		allFunctions.put("len", len);
+	}
+
 	public void visit(ProgName progName) {
+		addBuiltinMethods();
 		progName.obj = Tab.insert(Obj.Prog, progName.getProgName(), Tab.noType);
 		Tab.openScope();
 	}
@@ -322,8 +338,23 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		factor.struct = obj.getType();
 	}
 
+	// da li je argument za len (int|char) (niz|matrica) ?
+	public boolean lenParamsOK(Struct param) {
+		if (param.getKind() != Struct.Array) {
+			return false;
+		}
+
+		if (param.getElemType().getKind() == Struct.Array) {
+			param = param.getElemType();
+		}
+
+		int kind = param.getElemType().getKind();
+		return (kind == Struct.Char || kind == Struct.Int);
+	}
+
 	public void funcCall(Obj obj, SyntaxNode node) {
-		report_info("poziv f-je [" + obj.getName() + ']', node);
+		String name = obj.getName();
+		report_info("poziv f-je [" + name + ']', node);
 
 		if (obj.getKind() != Obj.Meth) {
 			report_error("samo se funkcije mogu pozivati", node);
@@ -331,19 +362,25 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 
 		ArrayList<Struct> curr = funStack.pop();
-		FunctionData fd = allFunctions.get(obj.getName());
+		FunctionData fd = allFunctions.get(name);
 		ArrayList<Struct> supposed = fd.arguments;
 		if (curr.size() != supposed.size()) {
-			report_error("funkcija [" + obj.getName() + "] ocekuje [" + fd.parCount + "] parametara " +
-					"a prosledjeno joj je [" + curr.size() + "]", node);
+			String form = "funkcija [%s] ocekuje [%d] parametara a dobila je [%d]";
+			report_error(String.format(form, name, fd.parCount, curr.size()), node);
 			return;
 		}
 
 		for (int i = 0; i < curr.size(); i++) {
-			if (!curr.get(i).equals(supposed.get(i))) {
-				report_error((i+1)+". parametar funkcije [" + obj.getName() + "] ne odgovara. " +
-						"ocekuje se tip (" + structToString(supposed.get(i)) + ") a dobijen je tip (" +
-						structToString(curr.get(i)) + ')', node);
+			if (name.equals("len")) {
+				if (!lenParamsOK(curr.get(i))) {
+					String form = "argument f-je [len] mora biti (int|char)(niz|matrica) a dobijen je (%s)";
+					report_error(String.format(form, structToString(curr.get(i))), node);
+				}
+			}
+			else if (!curr.get(i).equals(supposed.get(i))) {
+				String form = "%d. parametar funkcije [%s] ne odgovara. Ocekuje se tip (%s) a dobijen je tip (%s)";
+				report_error(String.format(
+						form, i+1, name, structToString(supposed.get(i)), structToString(curr.get(i))), node);
 			}
 		}
 	}

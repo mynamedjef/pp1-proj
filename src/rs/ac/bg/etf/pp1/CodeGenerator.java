@@ -84,6 +84,28 @@ public class CodeGenerator extends VisitorAdaptor {
 
 	// ---------------------------------------- Statement -----------------------------------------
 
+	public void visit(MatchedReturnExpr matched) {
+		// + na steku je rezultat Expr-a
+		Code.put(Code.exit);
+		Code.put(Code.return_);
+	}
+
+	public void visit(MatchedReturnVoid matched) {
+		Code.put(Code.exit);
+		Code.put(Code.return_);
+	}
+
+	public void visit(MatchedRead stmt) {
+		Obj obj = stmt.getDesignator().obj;
+		if (obj.getType().equals(Tab.charType)) {
+			Code.put(Code.bread);
+		}
+		else {
+			Code.put(Code.read);
+		}
+		Code.store(obj);
+	}
+
 	public void visit(MatchedPrintExpr print) {
 		if (print.getExpr().struct.equals(Tab.charType)) {
 			Code.loadConst(1);
@@ -94,15 +116,21 @@ public class CodeGenerator extends VisitorAdaptor {
 		}
 	}
 
-	public void visit(MatchedReturnExpr matched) {
-		Code.put(Code.exit);
-		Code.put(Code.return_);
+	public void visit(MatchedPrintNum stmt) {
+		Code.loadConst(stmt.getN2());
+		if (stmt.getExpr().struct.equals(Tab.charType)) {
+			Code.put(Code.bprint);
+		}
+		else {
+			Code.put(Code.print);
+		}
 	}
 
-	public void visit(MatchedReturnVoid matched) {
-		Code.put(Code.exit);
-		Code.put(Code.return_);
+	public void visit(MatchedMap stmt) {
+		// TODO
 	}
+
+	// --------------------------------------- Condition ------------------------------------------
 
 	// ---------------------------------- DesignatorStatement -------------------------------------
 
@@ -116,6 +144,20 @@ public class CodeGenerator extends VisitorAdaptor {
 		if (desig.getFunctionCall().getFunctionName().getDesignator().obj.getType() != Tab.noType) {
 			Code.put(Code.pop);
 		}
+	}
+
+	public void visit(DesignatorStatementIncr desig) {
+		Code.load(desig.getDesignator().obj);
+		Code.put(Code.const_1);
+		Code.put(Code.add);
+		Code.store(desig.getDesignator().obj);
+	}
+
+	public void visit(DesignatorStatementDecr desig) {
+		Code.load(desig.getDesignator().obj);
+		Code.put(Code.const_1);
+		Code.put(Code.sub);
+		Code.store(desig.getDesignator().obj);
 	}
 
 	public void visit(FunctionCall func) {
@@ -144,6 +186,8 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.put(Code.neg);
 	}
 
+	public void visit(ExprTerm expr) { /* empty: Term se propagira na gore */ }
+
 	// ------------------------------------------ Term --------------------------------------------
 
 	public void visit(TermMulop term) {
@@ -162,11 +206,17 @@ public class CodeGenerator extends VisitorAdaptor {
 		}
 	}
 
+	public void visit(TermFactor term) { /* empty: Factor se propagira na gore */ }
+
 	// -------------------------------------- Factor ----------------------------------------------
 
 	public void visit(FactorDesignator factor) {
 		Code.load(factor.getDesignator().obj);
 	}
+
+	public void visit(FactorFuncCall factor) { /* empty: FunctionCall je nonvoid i propagira na gore */ }
+
+	public void visit(FactorConst cnst) { /* empty: ConstOne se propagira na gore */ }
 
 	public void visit(FactorNewArray factor) {
 		Code.put(Code.newarray);
@@ -176,4 +226,6 @@ public class CodeGenerator extends VisitorAdaptor {
 	public void visit(FactorNewMatrix factor) {
 		// TODO
 	}
+
+	public void visit(FactorExpr factor) { /* empty: Expr se propagira na gore */ }
 }

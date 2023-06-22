@@ -340,9 +340,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	public void visit(FactorDesignator factor) {
 		Obj obj = factor.getDesignator().obj;
+		factor.struct = Tab.noType;
 		if (obj == Tab.noObj) {
 			report_error("Designator [" + obj.getName() + "] ne postoji", factor);
-			factor.struct = Tab.noType;
+			return;
+		}
+		if (obj.getKind() == Obj.Meth) {
 			return;
 		}
 		factor.struct = obj.getType();

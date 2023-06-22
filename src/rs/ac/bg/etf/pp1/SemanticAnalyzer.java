@@ -90,7 +90,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	public void report_info(String message, SyntaxNode node) {
-		log.error(create_message(message, node, Colors.ANSI_GREEN, "Info"));
+		log.info(create_message(message, node, Colors.ANSI_GREEN, "Info"));
 	}
 
 	public void printAllFunctionDecls() {
@@ -107,6 +107,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	private Struct declare_matrix(Struct type) {
 		return new Struct(Struct.Array, declare_array(type));
 	}
+
 	// ======================================== VISITI =============================================
 
 	public void addBuiltinMethods() {
@@ -269,7 +270,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			return;
 		}
 
-		currentMethod = Tab.insert(Obj.Meth, name, type);
+		method.obj = currentMethod = Tab.insert(Obj.Meth, name, type);
 		allFunctions.put(name, new FunctionData());
 		Tab.openScope();
 	}

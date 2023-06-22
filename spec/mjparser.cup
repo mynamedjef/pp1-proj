@@ -59,7 +59,7 @@ nonterminal ActPar, ActPars, ActParsParens, Addop, Assignop;
 nonterminal Condition, CondFact, ConditionIf, CondTerm;
 nonterminal ConstAssign, ConstDecl, ConstList;
 nonterminal DesignatorStatement, FormPar;
-nonterminal FormPars, FormParsParens, FunctionCall, FunctionName, Label, Matched, MethodTypeAndName;
+nonterminal FormPars, FormParsParens, FunctionCall, FunctionName, Label, Matched;
 nonterminal MethodDecl, MethodDeclList, Mulop;
 nonterminal ProgHeadList, ProgHead, Relop, Statement, StatementList;
 nonterminal Unmatched, VarDecl, VarDeclList, VarList, WhileStart;
@@ -74,7 +74,8 @@ terminal PLUS, PRINT, PROGRAM, RANGLE, RBRACE;
 terminal RBRACKET, READ, RETURN, RPAREN, SEMI;
 terminal SLASH, STAR, VOID, WHILE;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, VarDeclSingle, ProgName, Program;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, MethodTypeAndName;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj VarDeclSingle, ProgName, Program;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Struct ConstOne, Expr, Factor, Term, Type;
 
@@ -169,7 +170,7 @@ Matched ::= DesignatorStatement SEMI
 			|
 			(MatchedReturnExpr) RETURN Expr SEMI
 			|
-			RETURN SEMI
+			(MatchedReturnVoid) RETURN SEMI
 			|
 			(MatchedRead) READ LPAREN Designator RPAREN SEMI
 			|
@@ -267,9 +268,9 @@ Relop ::= (RelopEQ) EQ
 		|
 		LEQ;
 
-Addop ::= PLUS 
+Addop ::= (AddopPlus) PLUS
 		|
-		MINUS;
+		(AddopMinus) MINUS;
 
 Mulop ::= STAR
 		|

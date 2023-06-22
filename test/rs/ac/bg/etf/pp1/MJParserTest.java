@@ -64,7 +64,7 @@ public class MJParserTest {
 					objFile.delete();
 				}
 
-				CodeGenerator codeGenerator = new CodeGenerator();
+				CodeGenerator codeGenerator = new CodeGenerator(sem);
 				prog.traverseBottomUp(codeGenerator);
 				Code.dataSize = sem.nVars;
 				Code.mainPc = codeGenerator.getMainPc();

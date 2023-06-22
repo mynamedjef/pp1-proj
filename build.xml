@@ -101,9 +101,9 @@
 	</target>
 
 	<!--
-		alias cr='ant compile; ant runObj' # kompajluje projekat, prevodi program.mj i pokrece mjvm
-		alias r='ant runObj'			   # pokrece mjvm
-		alias cdd='ant compile; ant debug'  # kompajluje projekat, debaguje mjvm
-		alias d='ant debug'				   # debaguje mjvm
+		alias cr='ant compile && ant runObj' # kompajluje projekat, prevodi program.mj i pokrece mjvm
+		alias r='ant runObj'				 # pokrece mjvm
+		alias cdd='ant compile && ant debug' # kompajluje projekat, debaguje mjvm
+		alias d='ant debug'				     # debaguje mjvm
 	-->
 </project>

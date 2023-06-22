@@ -72,19 +72,22 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	private int loopCount = 0;
 	private int nVars = -1;
 
+	public String create_message(String message, SyntaxNode node, String color, String msgType) {
+		int size = 30 - node.getClass().getSimpleName().length(); // ni jedna klasa nece valjda imati duze ime od 30
+		String pad = new String(new char[size]).replace('\0', ' ');
+
+		String cls = String.format("\t<%s%s%s>", Colors.ANSI_RESET, node.getClass().getSimpleName(), color);
+		String line = String.format("%s%s (%s%d%s): ", color, msgType, Colors.ANSI_RESET, node.getLine(), color);
+		return line + cls + pad + message + Colors.ANSI_RESET;
+	}
+
 	public void report_error(String message, SyntaxNode node) {
 		errorDetected = true;
-		String cls = "\t<" + Colors.ANSI_RESET + node.getClass().getSimpleName() + Colors.ANSI_RED + ">\t\t";
-		String err = Colors.ANSI_RED + "Semantika (" +
-				Colors.ANSI_RESET +	node.getLine() + Colors.ANSI_RED + "): " + cls;
-		log.error(err + message + Colors.ANSI_RESET);
+		log.error(create_message(message, node, Colors.ANSI_RED, "Semantika"));
 	}
 
 	public void report_info(String message, SyntaxNode node) {
-		String cls = "\t<" + Colors.ANSI_RESET + node.getClass().getSimpleName() + Colors.ANSI_GREEN + ">\t\t";
-		String err = Colors.ANSI_GREEN + "Info      (" +
-				Colors.ANSI_RESET +	node.getLine() + Colors.ANSI_GREEN + "): " + cls;
-		log.info(err + message + Colors.ANSI_RESET);
+		log.error(create_message(message, node, Colors.ANSI_GREEN, "Info"));
 	}
 
 	public void printAllFunctionDecls() {

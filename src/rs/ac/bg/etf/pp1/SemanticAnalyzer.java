@@ -42,7 +42,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 
 		switch(s.getKind()) {
-		case 0:	return "NULL"+suffix;
+		case 0:	return "void"+suffix;
 		case 1: return "int"+suffix;
 		case 2: return "char"+suffix;
 		case 3: return "array"+suffix;
@@ -62,7 +62,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	private Obj currentMethod = null;
 	private Struct declarationType = null;
-	private Struct returnType = null;
+	private Struct returnType = Tab.noType;
 	private int loopCount = 0;
 	private int nVars = -1;
 
@@ -103,6 +103,9 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	public void visit(Program prog) {
+		if (!allFunctions.containsKey("main")) {
+			report_error("program mora imati funkciju [main]", prog);
+		}
 		nVars = Tab.currentScope.getnVars();
 		Tab.chainLocalSymbols(prog.getProgName().obj);
 		Tab.closeScope();
@@ -214,17 +217,28 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	// -------------------------------------- MethodDecl --------------------------------------------
 
 	public void visit(MethodDecl method) {
-		boolean b2 = returnType != null && currentMethod.getType() != returnType;
-		if (b2 || (returnType == null && currentMethod.getType() != Tab.noType)) {
-			report_error("metoda [" + currentMethod.getName() + "] mora imati return naredbu " +
-				"tipa (" + structToString(currentMethod.getType()) + ')', method);
+		String name = currentMethod.getName();
+		Struct type = currentMethod.getType();
+
+		if (name.equals("main")) {
+			ArrayList<Struct> arguments = allFunctions.get(name).arguments;
+			if (type != Tab.noType) {
+				report_error(String.format("metoda [main] mora biti tipa (void)"), method);
+			}
+			if (arguments.size() > 0) {
+				report_error("metoda [main] ne sme primati argumente", method);
+			}
+		}
+		if (returnType != type) {
+			report_error(String.format("tip povratne vrednosti (%s) se ne poklapa sa tipom (%s) funkcije [%s]",
+					structToString(returnType), structToString(type), name), method);
 		}
 
 		Tab.chainLocalSymbols(currentMethod);
 		Tab.closeScope();
 
 		currentMethod = null;
-		returnType = null;
+		returnType = Tab.noType;
 	}
 
 	public void processMethod(MethodTypeAndName method, String name, Struct type) {

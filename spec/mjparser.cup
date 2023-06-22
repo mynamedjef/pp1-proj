@@ -55,7 +55,7 @@ terminal Integer NUMBER;
 terminal String IDENT;
 terminal Character CHAR;
 
-nonterminal ActPar, ActPars, ActParsParens, Addop, Assignop;
+nonterminal ActPar, ActPars, ActParsParens, Addop;
 nonterminal Condition, CondFact, ConditionIf, CondTerm;
 nonterminal ConstAssign, ConstDecl, ConstList;
 nonterminal DesignatorStatement, FormPar;
@@ -188,7 +188,7 @@ StatementList ::= StatementList Statement
 				|
 				;
 
-DesignatorStatement ::= (DesignatorStatementAssign) Designator Assignop Expr
+DesignatorStatement ::= (DesignatorStatementAssign) Designator EQUAL Expr
 					|
 					(DesignatorStatementFuncCall) FunctionCall
 					|
@@ -253,8 +253,6 @@ Designator ::= (DesignatorName) IDENT:name
 			(DesignatorArray) Designator LBRACKET Expr RBRACKET;
 
 Label ::= IDENT;
-
-Assignop ::= EQUAL;
 
 Relop ::= (RelopEQ) EQ
 		|

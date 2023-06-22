@@ -572,22 +572,38 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 	}
 
-	public void visit(MatchedMap stmt) {
-		Obj obj = stmt.getDesignator().obj;
+	public void mapCheck(Designator desig) {
+		Obj obj = desig.obj;
 		Struct type = obj.getType();
 		if (type.getKind() != Struct.Array ||
 			(type.getKind() == Struct.Array && type.getElemType().getKind() == Struct.Array))
 		{
-			report_error("promenljiva [" + obj.getName() +
-					"] mora biti jednodimenzionalni niz ugradjenog tipa u map iskazu", stmt);
+			report_error(String.format(
+					"promenljiva [%s] mora biti jednodimenzionalni niz ugradjenog tipa u map iskazu",
+					obj.getName()), desig);
 		}
+	}
+
+	public void visit(MatchedMap stmt) {
+		Obj obj1 = stmt.getDesignator().obj;
+		Obj obj2 = stmt.getDesignator1().obj;
+		Struct type1 = obj1.getType();
+		Struct type2 = obj2.getType();
+		mapCheck(stmt.getDesignator());
+		mapCheck(stmt.getDesignator1());
+
 		Obj iter = Tab.find(stmt.getIter());
 		if (iter == Tab.noObj) {
-			report_error("identifikator [" + stmt.getIter() + "] ne postoji", stmt);
-			return;
+			report_error(String.format("identifikator [%s] ne postoji", stmt.getIter()), stmt);
 		}
-		if (!iter.getType().equals(obj.getType().getElemType())) {
-			report_error("tip identifikatora i tip niza [" + obj.getName() + "] se moraju poklapati", stmt);
+		if (!iter.getType().equals(type1.getElemType())) {
+			report_error(String.format("tip identifikatora (%s %s) i tip niza (%s %s) se moraju poklapati",
+					structToString(iter.getType()), iter.getName(), structToString(type1), obj1.getName()), stmt);
 		}
+		if (!type1.equals(type2)) {
+			report_error(String.format("nizovi (%s %s) i (%s %s) moraju biti nizovi istog tipa",
+					structToString(type1), obj1.getName(), structToString(type2), obj2.getName()), stmt);
+		}
+
 	}
 }

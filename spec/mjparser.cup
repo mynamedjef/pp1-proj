@@ -178,7 +178,7 @@ Matched ::= DesignatorStatement SEMI
 			|
 			(MatchedPrintNum) PRINT LPAREN Expr COMMA NUMBER RPAREN SEMI
 			|
-			(MatchedMap) Designator DOT MAP LPAREN IDENT:iter LAMBDA Statement RPAREN SEMI
+			(MatchedMap) Designator EQUAL Designator DOT MAP LPAREN IDENT:iter LAMBDA Expr RPAREN SEMI
 			|
 			LBRACE StatementList RBRACE;
 

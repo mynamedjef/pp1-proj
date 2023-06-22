@@ -46,16 +46,15 @@ public class CodeGenerator extends VisitorAdaptor {
 	// ------------------------------------------ Const -------------------------------------------
 
 	public void visit(ConstOneNumber cnst) {
-		Code.load(new Obj(Obj.Con, "", cnst.struct, cnst.getN1(), 0));
+		Code.load(cnst.obj);
 	}
 
 	public void visit(ConstOneBool cnst) {
-		int val = cnst.getB1() ? 1 : 0;
-		Code.load(new Obj(Obj.Con, "", cnst.struct, val, 0));
+		Code.load(cnst.obj);
 	}
 
 	public void visit(ConstOneChar cnst) {
-		Code.load(new Obj(Obj.Con, "", cnst.struct, cnst.getC1(), 0));
+		Code.load(cnst.obj);
 	}
 
 	// ------------------------------------------- Method -----------------------------------------
@@ -126,12 +125,6 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.put2(offset);
 	}
 
-	// -------------------------------------- Factor ----------------------------------------------
-
-	public void visit(FactorDesignator factor) {
-		Code.load(factor.getDesignator().obj);
-	}
-
 	// ------------------------------------------ Expr --------------------------------------------
 
 	public void visit(ExprAddop expr) {
@@ -145,5 +138,42 @@ public class CodeGenerator extends VisitorAdaptor {
 		else {
 			sem.report_error("FATAL: unreachable branch", expr);
 		}
+	}
+
+	public void visit(ExprNegative expr) {
+		Code.put(Code.neg);
+	}
+
+	// ------------------------------------------ Term --------------------------------------------
+
+	public void visit(TermMulop term) {
+		Mulop op = term.getMulop();
+		if (op instanceof MulopMul) {
+			Code.put(Code.mul);
+		}
+		else if (op instanceof MulopDiv) {
+			Code.put(Code.div);
+		}
+		else if (op instanceof MulopMod) {
+			Code.put(Code.rem);
+		}
+		else {
+			sem.report_error("FATAL: unreachable branch", term);
+		}
+	}
+
+	// -------------------------------------- Factor ----------------------------------------------
+
+	public void visit(FactorDesignator factor) {
+		Code.load(factor.getDesignator().obj);
+	}
+
+	public void visit(FactorNewArray factor) {
+		Code.put(Code.newarray);
+		Code.put(factor.struct.equals(Tab.charType) ? 0 : 1);
+	}
+
+	public void visit(FactorNewMatrix factor) {
+		// TODO
 	}
 }

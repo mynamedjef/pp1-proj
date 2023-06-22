@@ -74,10 +74,10 @@ terminal PLUS, PRINT, PROGRAM, RANGLE, RBRACE;
 terminal RBRACKET, READ, RETURN, RPAREN, SEMI;
 terminal SLASH, STAR, VOID, WHILE;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Obj Designator, MethodTypeAndName;
+nonterminal rs.etf.pp1.symboltable.concepts.Obj ConstOne, Designator, MethodTypeAndName;
 nonterminal rs.etf.pp1.symboltable.concepts.Obj VarDeclSingle, ProgName, Program;
 
-nonterminal rs.etf.pp1.symboltable.concepts.Struct ConstOne, Expr, Factor, Term, Type;
+nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, Factor, Term, Type;
 
 
 Program ::= (Program) PROGRAM ProgName:p ProgHeadList LBRACE MethodDeclList RBRACE;
@@ -272,9 +272,9 @@ Addop ::= (AddopPlus) PLUS
 		|
 		(AddopMinus) MINUS;
 
-Mulop ::= STAR
+Mulop ::= (MulopMul) STAR
 		|
-		SLASH
+		(MulopDiv) SLASH
 		|
-		PERCENT;
+		(MulopMod) PERCENT;
 

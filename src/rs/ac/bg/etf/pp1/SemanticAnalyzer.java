@@ -141,15 +141,15 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	public void visit(ConstOneNumber cnst) {
-		cnst.struct = Tab.intType;
+		cnst.obj = new Obj(Obj.Con, "", Tab.intType, cnst.getN1(), 0);
 	}
 
 	public void visit(ConstOneChar cnst) {
-		cnst.struct = Tab.charType;
+		cnst.obj = new Obj(Obj.Con, "", Tab.charType, cnst.getC1(), 0);
 	}
 
 	public void visit(ConstOneBool cnst) {
-		cnst.struct = booleanType;
+		cnst.obj = new Obj(Obj.Con, "", booleanType, cnst.getB1()?1:0, 0);
 	}
 
 	public void visit(ConstAssign constAssign) {
@@ -159,12 +159,15 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			return;
 		}
 
-		if (!constAssign.getConstOne().struct.assignableTo(declarationType)) {
+		if (!constAssign.getConstOne().obj.getType().assignableTo(declarationType)) {
 			report_error("tip konstante [" + name + "] i deklaracija se ne poklapaju", constAssign);
 			return;
 		}
 
-		Tab.insert(Obj.Con, constAssign.getName(), declarationType);
+		Obj obj = Tab.insert(Obj.Con, constAssign.getName(), declarationType);
+		Obj kid = constAssign.getConstOne().obj;
+		obj.setAdr(kid.getAdr());
+		obj.setLevel(0);
 		report_info("konstanta [" + name + "] definisana", constAssign);
 	}
 
@@ -402,7 +405,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	public void visit(FactorConst factor) {
-		factor.struct = factor.getConstOne().struct;
+		factor.struct = factor.getConstOne().obj.getType();
 	}
 
 	public void visit(FactorNewArray factor) {

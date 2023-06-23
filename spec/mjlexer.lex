@@ -7,6 +7,8 @@ import java_cup.runtime.Symbol;
 
 %{
 
+	public boolean errorDetected = false;
+
 	// ukljucivanje informacije o poziciji tokena
 	private Symbol new_symbol(int type) {
 		return new Symbol(type, yyline+1, yycolumn);
@@ -96,5 +98,5 @@ import java_cup.runtime.Symbol;
 "'"[\040-\176]"'" { return new_symbol(sym.CHAR, yytext().charAt(1)); }
 [a-zA-Z][a-zA-Z0-9_]* 	{return new_symbol(sym.IDENT, yytext()); }
 
-. { System.err.println("Leksicka greska ("+yytext()+") u liniji "+(yyline+1)); }
+. { System.err.println("Leksicka greska ("+yytext()+") u liniji "+(yyline+1)); errorDetected = true; }
 

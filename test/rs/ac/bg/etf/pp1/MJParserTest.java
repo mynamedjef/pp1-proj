@@ -25,59 +25,95 @@ public class MJParserTest {
 		DOMConfigurator.configure(Log4JUtils.instance().findLoggerConfigFile());
 		Log4JUtils.instance().prepareLogFile(Logger.getRootLogger());
 	}
+
+	private static void deleteIfExists(File file) {
+		if (file.exists()) {
+			file.delete();
+		}
+	}
 	
+	private static Logger log = Logger.getLogger(MJParserTest.class);
+
+	public static Program syntaxAnalysis(String filename) throws Exception {
+		File sourceCode = new File(filename);
+		log.info("Compiling source file: " + sourceCode.getAbsolutePath());
+
+		Reader br = new BufferedReader(new FileReader(sourceCode));
+		Yylex lexer = new Yylex(br);
+
+		MJParser p = new MJParser(lexer);
+        Symbol s = p.parse();  //pocetak parsiranja
+		log.info("===================================");
+
+		if (lexer.errorDetected) {
+			throw new Exception("leksicke analize");
+		}
+		if (p.errorDetected) {
+			throw new Exception("sintaksne analize");
+		}
+
+        Program prog = (Program)(s.value);
+		// ispis sintaksnog stabla
+		log.info(prog.toString(""));
+
+		return prog;
+	}
+
+	public static SemanticAnalyzer semanticAnalysis(Program prog) throws Exception {
+		Tab.init();
+		
+		SemanticAnalyzer sem = new SemanticAnalyzer();
+		prog.traverseBottomUp(sem);
+
+		Tab.dump();
+
+		if (sem.errorDetected) {
+			throw new Exception("semanticke analize");
+		}
+		//log.info("===================================");
+		//sem.printAllFunctionDecls();
+		return sem;
+	}
+
+	public static void CodeGeneration(Program prog, SemanticAnalyzer sem, File objFile) throws FileNotFoundException {
+		CodeGenerator codeGenerator = new CodeGenerator(sem);
+		prog.traverseBottomUp(codeGenerator);
+
+		Code.dataSize = sem.nVars;
+		Code.mainPc = codeGenerator.getMainPc();
+
+		deleteIfExists(objFile);
+		Code.write(new FileOutputStream(objFile));
+	}
+
 	public static void main(String[] args) throws Exception {
 		
-		Logger log = Logger.getLogger(MJParserTest.class);
-		
 		Reader br = null;
+		String objFileName = "test/program.obj";
+		String sourceFileName = "test/program.mj";
+
+		File objFile = new File(objFileName);
 		try {
-			File sourceCode = new File("test/program.mj");
-			log.info("Compiling source file: " + sourceCode.getAbsolutePath());
-			
-			br = new BufferedReader(new FileReader(sourceCode));
-			Yylex lexer = new Yylex(br);
-			
-			MJParser p = new MJParser(lexer);
-	        Symbol s = p.parse();  //pocetak parsiranja
-	        
-	        Program prog = (Program)(s.value); 
-			// ispis sintaksnog stabla
-			log.info(prog.toString(""));
+
+			Program prog = syntaxAnalysis(sourceFileName);
 			log.info("===================================");
 
-			// ispis prepoznatih programskih konstrukcija
-			RuleVisitor v = new RuleVisitor();
-			//prog.traverseBottomUp(v);
-
-			Tab.init();
-			
-			SemanticAnalyzer sem = new SemanticAnalyzer();
-			prog.traverseBottomUp(sem);
-
+			SemanticAnalyzer sem = semanticAnalysis(prog);
 			log.info("===================================");
-			Tab.dump();
 
-			if (!p.errorDetected && !sem.errorDetected) {
-				File objFile = new File("test/program.obj");
-				if (objFile.exists()) {
-					objFile.delete();
-				}
+			CodeGeneration(prog, sem, objFile);
+			log.info(String.format("%sGenerisanje koda uspesno zavrseno%s", Colors.ANSI_GREEN, Colors.ANSI_RESET));
 
-				CodeGenerator codeGenerator = new CodeGenerator(sem);
-				prog.traverseBottomUp(codeGenerator);
-				Code.dataSize = sem.nVars;
-				Code.mainPc = codeGenerator.getMainPc();
-				Code.write(new FileOutputStream(objFile));
-				log.info("Parsiranje uspesno zavrseno");
-			} else {
-				log.error("Parsiranje nije uspesno zavrseno");
-			}
+		} catch (FileNotFoundException f) {
+			log.error(String.format("%s%s%s", Colors.ANSI_RED, f.getMessage(), Colors.ANSI_RESET));
+			deleteIfExists(objFile);
 
-			log.info("===================================");
-			sem.printAllFunctionDecls();
-		} 
-		finally {
+		} catch (Exception e) {
+			log.error(String.format("%sParsiranje nije uspesno zavrseno, greska se desila tokom %s%s",
+					Colors.ANSI_RED, e.getMessage(), Colors.ANSI_RESET));
+			deleteIfExists(objFile);
+
+		} finally {
 			if (br != null) try { br.close(); } catch (IOException e1) { log.error(e1.getMessage(), e1); }
 		}
 

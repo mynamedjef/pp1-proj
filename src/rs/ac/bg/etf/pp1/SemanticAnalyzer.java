@@ -438,23 +438,44 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void visit(DesignatorName desig) {
 		desig.obj = Tab.find(desig.getName());
 		if (desig.obj == Tab.noObj) {
-			report_error("Ime designatora [" + desig.getName() + "] ne postoji", desig);
+			report_error(String.format("Ime designatora [%s] ne postoji", desig.getName()), desig);
 		}
 	}
 
+	public void visit(DesignatorScalar desig) {
+		desig.obj = desig.getDesignatorName().obj;
+	}
+
 	public void visit(DesignatorArray desig) {
-		Obj obj = desig.getDesignator().obj;
+		Obj kid = desig.getDesignatorName().obj;
+		Struct kidType = kid.getType();
 		desig.obj = Tab.noObj;
 		if (desig.getExpr().struct != Tab.intType) {
-			report_error("Tip izraza kojim se indeksira promenljiva [" + desig.obj.getName() + "] mora biti int", desig);
+			report_error(String.format("Tip izraza kojim se indeksira promenljiva [%s] mora biti int", desig.obj.getName()), desig);
 			return;
 		}
-		if (obj.getType().getKind() != Struct.Array) {
-			report_error("Promenljiva [" + obj.getName() + "] mora biti tipa niz", desig);
+		if (kidType.getKind() != Struct.Array) {
+			report_error(String.format("Promenljiva [%s] mora biti niz ili matrica", kid.getName()), desig);
 			return;
 		}
 
-		desig.obj = new Obj(Obj.Elem, obj.getName(), obj.getType().getElemType());
+		desig.obj = new Obj(Obj.Elem, kid.getName(), kidType.getElemType());
+	}
+
+	public void visit(DesignatorMatrix desig) {
+		Obj kid = desig.getDesignatorName().obj;
+		Struct kidType = kid.getType();
+		desig.obj = Tab.noObj;
+		if (desig.getExpr().struct != Tab.intType || desig.getExpr1().struct != Tab.intType) {
+			report_error(String.format("Tip izraza kojim se indeksira promenljiva [%s] mora biti int", desig.obj.getName()), desig);
+			return;
+		}
+		if (kidType.getKind() != Struct.Array || kidType.getElemType().getKind() != Struct.Array) {
+			report_error(String.format("Promenljiva [%s] mora biti tipa matrica", kid.getName()), desig);
+			return;
+		}
+
+		desig.obj = new Obj(Obj.Elem, kid.getName(), kidType.getElemType().getElemType());
 	}
 
 	// -------------------------------- DesignatorStatement -----------------------------------------

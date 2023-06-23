@@ -97,6 +97,11 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 
 	public void visit(MatchedRead stmt) {
+		/*
+		 * očekuje se jedan od ova dva steka:
+		 * 	...
+		 *  ..., arr, idx
+		 */
 		Obj obj = stmt.getDesignator().obj;
 		if (obj.getType().equals(Tab.charType)) {
 			Code.put(Code.bread);
@@ -108,6 +113,9 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 
 	public void visit(MatchedPrintExpr print) {
+		/*
+		 * očekuje stek: ..., val
+		 */
 		if (print.getExpr().struct.equals(Tab.charType)) {
 			Code.loadConst(1);
 			Code.put(Code.bprint);
@@ -118,6 +126,9 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 
 	public void visit(MatchedPrintNum stmt) {
+		/*
+		 * očekuje stek: ..., val
+		 */
 		Code.loadConst(stmt.getN2());
 		if (stmt.getExpr().struct.equals(Tab.charType)) {
 			Code.put(Code.bprint);
@@ -136,6 +147,11 @@ public class CodeGenerator extends VisitorAdaptor {
 	// ---------------------------------- DesignatorStatement -------------------------------------
 
 	public void visit(DesignatorStatementAssign desig) {
+		/*
+		 * očekuje se jedan od ova dva steka:
+		 * 	..., expr
+		 *  ..., arr, idx, expr
+		 */
 		Code.store(desig.getDesignator().obj);
 	}
 
@@ -147,18 +163,24 @@ public class CodeGenerator extends VisitorAdaptor {
 		}
 	}
 
-	public void visit(DesignatorStatementIncr desig) {
-		Code.load(desig.getDesignator().obj);
-		Code.put(Code.const_1);
+	public void processCrementation(Obj obj, boolean incr) {
+		/*
+		 * očekuje se jedan od ova dva steka:
+		 * 	...
+		 *  ..., arr, idx
+		 */
+		Code.load(obj);
+		Code.put((incr) ? Code.const_1 : Code.const_m1);
 		Code.put(Code.add);
-		Code.store(desig.getDesignator().obj);
+		Code.store(obj);
 	}
 
-	public void visit(DesignatorStatementDecr desig) {
-		Code.load(desig.getDesignator().obj);
-		Code.put(Code.const_1);
-		Code.put(Code.sub);
-		Code.store(desig.getDesignator().obj);
+	public void visit(DesignatorStatementIncr stmt) {
+		processCrementation(stmt.getDesignator().obj, true);
+	}
+
+	public void visit(DesignatorStatementDecr stmt) {
+		processCrementation(stmt.getDesignator().obj, false);
 	}
 
 	public void visit(FunctionCall func) {
@@ -211,20 +233,22 @@ public class CodeGenerator extends VisitorAdaptor {
 
 	// -------------------------------------- Factor ----------------------------------------------
 
-	public void visit(FactorDesignator factor) {
-		Code.load(factor.getDesignator().obj);
-	}
+	public void visit(FactorDesignator factor) { /* TODO empty */ }
 
 	public void visit(FactorFuncCall factor) { /* empty: FunctionCall je nonvoid i propagira na gore */ }
 
 	public void visit(FactorConst cnst) { /* empty: ConstOne se propagira na gore */ }
 
 	public void visit(FactorNewArray factor) {
+		/*
+		 * očekuje stek: ..., n
+		 */
 		Code.put(Code.newarray);
 		Code.put(factor.struct.equals(Tab.charType) ? 0 : 1);
 	}
 
 	public void swapTop() {
+		// obrće gornje dve vrednosti steka
 		Code.put(Code.dup_x1);
 		Code.put(Code.pop);
 	}
@@ -319,4 +343,120 @@ end:
 
 	// ------------------------------------ Designator --------------------------------------------
 
+	public void visit(DesignatorName desig) { /* empty */ }
+
+	public void visit(DesignatorScalar desig) {
+		SyntaxNode parent = desig.getParent();
+
+		// trenutni stek: ...
+		if (parent instanceof MatchedRead) {
+			// očekuje se stek: ...
+		}
+		else if (parent instanceof MatchedMap) {
+			// TODO
+		}
+		else if (parent instanceof DesignatorStatementIncr || parent instanceof DesignatorStatementDecr) {
+			// očekuje se stek: ...
+		}
+		else if (parent instanceof DesignatorStatementAssign) {
+			// očekuje se stek: ...
+		}
+		else if (parent instanceof FunctionName) {
+			// očekuje se stek: ...
+			// nije potrebno nista na steku ostavljati jer FunctionCall
+			// poziva funkciju na osnovu objekta
+		}
+		else if (parent instanceof FactorDesignator) {
+			// očekuje se stek: ..., rval
+			Code.load(desig.obj);
+		}
+
+	}
+
+	public void visit(DesignatorArray desig) {
+		SyntaxNode parent = desig.getParent();
+		Obj elemObj = desig.getDesignatorName().obj;
+
+		// trenutni stek:   ..., idx
+		if (parent instanceof MatchedRead) {
+			// očekuje se stek: ..., arr, idx
+			Code.load(elemObj);
+			swapTop();
+		}
+		else if (parent instanceof MatchedMap) {
+			// TODO
+		}
+		else if (parent instanceof DesignatorStatementIncr || parent instanceof DesignatorStatementDecr) {
+			// očekuje se stek: ..., arr, idx, arr, idx
+			Code.load(elemObj);
+			swapTop();
+			Code.put(Code.dup2);
+		}
+		else if (parent instanceof DesignatorStatementAssign) {
+			// očekuje se stek: ..., arr, idx
+			Code.load(elemObj);
+			swapTop();
+		}
+		else if (parent instanceof FunctionName) {
+			// očekuje se stek: ...
+			// nije potrebno nista na steku ostavljati jer FunctionCall
+			// poziva funkciju na osnovu objekta
+		}
+		else if (parent instanceof FactorDesignator) {
+			// očekuje se stek: ..., arr[idx]
+			Code.load(elemObj);
+			swapTop();
+			Code.load(desig.obj);
+		}
+	}
+
+	public void visit(DesignatorMatrix desig) {
+		SyntaxNode parent = desig.getParent();
+		Obj elemObj = desig.getDesignatorName().obj;
+
+		// trenutni stek: ..., idx1, idx2
+		if (parent instanceof MatchedRead) {
+			// očekuje se stek: ..., mat[idx1], idx2
+			swapTop();				// ..., idx2, idx1
+			Code.load(elemObj);		// ..., idx2, idx1, mat
+			swapTop();				// ..., idx2, mat, idx1
+			Code.load(desig.obj);	// ..., idx2, mat[idx1]
+			swapTop();				// ..., mat[idx1], idx2
+		}
+		else if (parent instanceof MatchedMap) {
+			// TODO
+		}
+		else if (parent instanceof DesignatorStatementIncr || parent instanceof DesignatorStatementDecr) {
+			// očekuje se stek: ..., mat[idx1], idx2, mat[idx1], idx2
+			swapTop();				// ..., idx2, idx1
+			Code.load(elemObj);		// ..., idx2, idx1, mat
+			swapTop();				// ..., idx2, mat, idx1
+			Code.load(desig.obj);	// ..., idx2, mat[idx1]
+			swapTop();				// ..., mat[idx1], idx2
+			Code.put(Code.dup2);	// ..., mat[idx1], idx2, mat[idx1], idx2
+		}
+		else if (parent instanceof DesignatorStatementAssign) {
+			// očekuje se stek: ..., mat[idx1], idx2
+			swapTop();				// ..., idx2, idx1
+			Code.load(elemObj);		// ..., idx2, idx1, mat
+			swapTop();				// ..., idx2, mat, idx1
+			Code.load(desig.obj);	// ..., idx2, mat[idx1]
+			swapTop();				// ..., mat[idx1], idx2
+		}
+		else if (parent instanceof FunctionName) {
+			// očekuje se stek: ...
+			// nije potrebno nista na steku ostavljati jer FunctionCall
+			// poziva funkciju na osnovu objekta
+		}
+		else if (parent instanceof FactorDesignator) {
+			// očekuje se stek: ..., mat[idx1][idx2]
+			swapTop();				// ..., idx2, idx1
+			Code.load(elemObj);		// ..., idx2, idx1, mat
+			swapTop();				// ..., idx2, mat, idx1
+			Code.load(desig.obj);	// ..., idx2, mat[idx1]
+			swapTop();				// ..., mat[idx1], idx2
+			Code.load(desig.obj);	// ..., mat[idx1][idx2]
+		}
+
+	}
 }

@@ -45,11 +45,13 @@ public class CodeGenerator extends VisitorAdaptor {
 		for (MatchedMap m : sem.mapStatements.keySet()) {
 			SemanticAnalyzer.MapData md = sem.mapStatements.get(m);
 			Expr e = md.e;
-			CodeGenerator temp = new CodeGenerator(sem);
 
 			md.setAdr(Code.pc);
-			Code.put(Code.enter); Code.put(1); Code.put(1);
+			Code.put(Code.enter); Code.put(0); Code.put(0);
+
+			MapVisitor temp = new MapVisitor(sem);
 			e.traverseBottomUp(temp);
+
 			Code.put(Code.exit);
 			Code.put(Code.return_);
 		}
@@ -57,7 +59,6 @@ public class CodeGenerator extends VisitorAdaptor {
 
 	public void visit(ProgName progName) {
 		generateBuiltinFunctionsCode();
-		generateMapFunctions();
 	}
 
 	// ------------------------------------------ Const -------------------------------------------
@@ -78,11 +79,12 @@ public class CodeGenerator extends VisitorAdaptor {
 
 	public void visitMethod(MethodTypeAndName method, String name) {
 		if (name.equals("main")) {
+			generateMapFunctions();
 			mainPc = Code.pc;
 		}
 		method.obj.setAdr(Code.pc);
-		Code.put(Code.enter);
 
+		Code.put(Code.enter);
 		Code.put(sem.allFunctions.get(method.obj.getName()).parCount);
 		Code.put(method.obj.getLocalSymbols().size());
 	}
@@ -197,12 +199,20 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.put(charType ?
 				Code.baload :
 				Code.aload);			// ..., i, src, dst, dst, i, src[i]
+		Code.store(SemanticAnalyzer.mapIterator);
+										// ..., i, src, dst, dst, i
 
 		SemanticAnalyzer.MapData md = sem.mapStatements.get(stmt);
 		int offset = md.getAdr() - Code.pc;
 		Code.put(Code.call);
 		Code.put2(offset);				// ..., i, src, dst, dst, i, e(src[i])
-		// TODO: ovo ne radi. argument se ne prosledjuje ispravno u e(src[i]). Moze se zakrpiti globalnom promenljivom.
+		/*
+		 * TODO:
+		 * 1. ako se u Expr zove funkcija sa bocnim efektom, to ce biti problem jer se poziv funkcije koja je u
+		 * Expr izvrsi "u prazno" tj. njegov rezultat se odmah popuje sa steka.
+		 * 2. drugi problem je ako se uradi arr.map(x => x+y): ovo je problem jer za sad map podrzava samo koriscenje
+		 * jedne promenljive u izrazu
+		 */
 
 		Code.put(charType ?
 				Code.bastore :

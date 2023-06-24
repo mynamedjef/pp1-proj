@@ -30,7 +30,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		public String toString() {
 			String s = "";
 			for (int i = 0; i < arguments.size(); i++) {
-				s += "" + (i+1) + ": " + structToString(arguments.get(i)) + '\n'; 
+				s += "" + (i+1) + ": " + structToString(arguments.get(i)) + '\n';
 			}
 			return s.equals("") ?
 					"no formal parameters\n" :
@@ -54,6 +54,8 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	public static Struct booleanType = Tab.insert(Obj.Type, "bool", new Struct(Struct.Bool)).getType();
+
+	public static Obj mapIterator = null;
 
 	public static String structToString(Struct s) {
 		String suffix = "";
@@ -112,7 +114,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	public void printAllFunctionDecls() {
 		for (String name : allFunctions.keySet()) {
 			String value = allFunctions.get(name).toString();
-			System.out.println("----- " + name + " -----\n" + value);
+			System.out.println(String.format("----- %s -----\n%s", name, value));
 		}
 	}
 
@@ -137,8 +139,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	public void visit(ProgName progName) {
 		addBuiltinMethods();
+
 		progName.obj = Tab.insert(Obj.Prog, progName.getProgName(), Tab.noType);
 		Tab.openScope();
+
+		mapIterator = Tab.insert(Obj.Var, "map_iterator", Tab.intType);
+		mapIterator.setLevel(0);
 	}
 
 	public void visit(Program prog) {

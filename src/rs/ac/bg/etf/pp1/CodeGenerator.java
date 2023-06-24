@@ -19,6 +19,8 @@ public class CodeGenerator extends VisitorAdaptor {
 
 	public CodeGenerator(SemanticAnalyzer sem) { this.sem = sem; }
 
+	public boolean mapDest = true;
+
 	// ======================================== VISITI =============================================
 
 	public void generateBuiltinFunctionsCode() {
@@ -39,8 +41,23 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.put(Code.return_);
 	}
 
+	public void generateMapFunctions() {
+		for (MatchedMap m : sem.mapStatements.keySet()) {
+			SemanticAnalyzer.MapData md = sem.mapStatements.get(m);
+			Expr e = md.e;
+			CodeGenerator temp = new CodeGenerator(sem);
+
+			md.setAdr(Code.pc);
+			Code.put(Code.enter); Code.put(1); Code.put(1);
+			e.traverseBottomUp(temp);
+			Code.put(Code.exit);
+			Code.put(Code.return_);
+		}
+	}
+
 	public void visit(ProgName progName) {
 		generateBuiltinFunctionsCode();
+		generateMapFunctions();
 	}
 
 	// ------------------------------------------ Const -------------------------------------------
@@ -139,7 +156,75 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 
 	public void visit(MatchedMap stmt) {
-		// TODO
+		/*
+		 * očekuje ste stek:
+		 * 	..., src, expr
+		 *  ..., DST, IDX, src, expr
+		 *  trenutni stek ce se ignorisati tokom ispisa
+		 */
+		boolean charType = (stmt.getDesignator().obj.getType().getElemType().equals(Tab.charType));
+		Obj dst = stmt.getDesignator().obj;
+
+										// ..., src, expr
+		Code.put(Code.pop);				// ..., src
+		Code.put(Code.dup);				// ..., src, src
+		Code.put(Code.arraylength);		// ..., src, N
+		Code.put(Code.newarray);
+		Code.put(charType ? 0 : 1); 	// ..., src, dst									dst = new arr[len(src)]
+		Code.loadConst(0);				// ..., src, dst, i=0								i = 0
+
+		int forPc = Code.pc;
+		// FOR:
+		swapTop();						// ..., src, i, dst
+		Code.put(Code.dup_x2);			// ..., dst, src, i, dst
+		Code.put(Code.arraylength); 	// ..., dst, src, i, N
+		Code.put(Code.dup2);			// ..., dst, src, i, N, i, N
+
+		Code.putFalseJump(Code.lt, 0);	// ..., dst, src, i, N								if (N <= i) goto END
+		int falseJump = Code.pc-2;
+
+		Code.put(Code.pop);				// ..., dst, src, i
+		Code.put(Code.dup_x2);			// ..., i, dst, src, i
+		Code.put(Code.dup_x2);			// ..., i, i, dst, src, i
+		Code.put(Code.pop);				// ..., i, i, dst, src
+		Code.put(Code.dup_x2);			// ..., i, src, i, dst, src
+		Code.put(Code.dup_x2);			// ..., i, src, src, i, dst, src
+		Code.put(Code.pop);				// ..., i, src, src, i, dst
+		Code.put(Code.dup_x2);			// ..., i, src, dst, src, i, dst
+		Code.put(Code.dup_x2);			// ..., i, src, dst, dst, src, i, dst
+		Code.put(Code.pop);				// ..., i, src, dst, dst, src, i
+		Code.put(Code.dup_x1);			// ..., i, src, dst, dst, i, src, i
+		Code.put(charType ?
+				Code.baload :
+				Code.aload);			// ..., i, src, dst, dst, i, src[i]
+
+		SemanticAnalyzer.MapData md = sem.mapStatements.get(stmt);
+		int offset = md.getAdr() - Code.pc;
+		Code.put(Code.call);
+		Code.put2(offset);				// ..., i, src, dst, dst, i, e(src[i])
+		// TODO: ovo ne radi. argument se ne prosledjuje ispravno u e(src[i]). Moze se zakrpiti globalnom promenljivom.
+
+		Code.put(charType ?
+				Code.bastore :
+				Code.astore);			// ..., i, src, dst									dst[i] = expr(src[i])
+		swapTop();						// ..., i, dst, src
+		Code.put(Code.dup_x2);			// ..., src, i, dst, src
+		Code.put(Code.pop);				// ..., src, i, dst
+		swapTop();						// ..., src, dst, i
+		Code.put(Code.const_1);			// ..., src, dst, i, 1
+		Code.put(Code.add);				// ..., src, dst, i=i+1								i++;
+
+		Code.putJump(forPc);			//													goto FOR
+		Code.fixup(falseJump);
+		// END:
+										// ..., dst, src, i, N
+		Code.put(Code.pop);				// ..., dst, src, i
+		Code.put(Code.pop);				// ..., dst, src
+		Code.put(Code.pop);				// ..., dst
+								// ..., dst
+								// ILI
+								// ..., DST, IDX, dst
+		Code.store(dst);
 	}
 
 	// --------------------------------------- Condition ------------------------------------------
@@ -233,7 +318,7 @@ public class CodeGenerator extends VisitorAdaptor {
 
 	// -------------------------------------- Factor ----------------------------------------------
 
-	public void visit(FactorDesignator factor) { /* TODO empty */ }
+	public void visit(FactorDesignator factor) { /* empty */ }
 
 	public void visit(FactorFuncCall factor) { /* empty: FunctionCall je nonvoid i propagira na gore */ }
 
@@ -353,7 +438,11 @@ end:
 			// očekuje se stek: ...
 		}
 		else if (parent instanceof MatchedMap) {
-			// TODO
+			// očekuje se stek: ..., arrptr
+			if (!mapDest) { // za destinaciju ne stavljamo nista, a za source stavljamo pokazivac na niz
+				Code.load(desig.obj);
+			}
+			mapDest ^= true;
 		}
 		else if (parent instanceof DesignatorStatementIncr || parent instanceof DesignatorStatementDecr) {
 			// očekuje se stek: ...
@@ -370,7 +459,9 @@ end:
 			// očekuje se stek: ..., rval
 			Code.load(desig.obj);
 		}
-
+		else {
+			sem.report_error("FATAL: unreachable branch", desig);
+		}
 	}
 
 	public void visit(DesignatorArray desig) {
@@ -384,7 +475,16 @@ end:
 			swapTop();
 		}
 		else if (parent instanceof MatchedMap) {
-			// TODO
+			// očekuje se stek: ... dst, idx, src
+			if (mapDest) { // za destinaciju samo pravimo da stek bude: ..., dst, idx
+				Code.load(elemObj);
+				swapTop();
+			} else {		// za source samo pravimo da stek bude: ..., src[idx]
+				Code.load(elemObj);
+				swapTop();
+				Code.load(desig.obj);
+			}
+			mapDest ^= true;
 		}
 		else if (parent instanceof DesignatorStatementIncr || parent instanceof DesignatorStatementDecr) {
 			// očekuje se stek: ..., arr, idx, arr, idx
@@ -408,6 +508,9 @@ end:
 			swapTop();
 			Code.load(desig.obj);
 		}
+		else {
+			sem.report_error("FATAL: unreachable branch", desig);
+		}
 	}
 
 	public void visit(DesignatorMatrix desig) {
@@ -424,7 +527,8 @@ end:
 			swapTop();				// ..., mat[idx1], idx2
 		}
 		else if (parent instanceof MatchedMap) {
-			// TODO
+			// ovde nikad ne bi smelo da se udje
+			sem.report_error("FATAL: unreachable branch", desig);
 		}
 		else if (parent instanceof DesignatorStatementIncr || parent instanceof DesignatorStatementDecr) {
 			// očekuje se stek: ..., mat[idx1], idx2, mat[idx1], idx2
@@ -457,6 +561,8 @@ end:
 			swapTop();				// ..., mat[idx1], idx2
 			Code.load(desig.obj);	// ..., mat[idx1][idx2]
 		}
-
+		else {
+			sem.report_error("FATAL: unreachable branch", desig);
+		}
 	}
 }

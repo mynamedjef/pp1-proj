@@ -38,6 +38,21 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 	}
 
+	class MapData {
+		private int adr;
+		Expr e;
+
+		public MapData(Expr e) {
+			this.e = e;
+		}
+
+		void setAdr(int adr) {
+			this.adr = adr;
+		}
+
+		int getAdr() { return adr; }
+	}
+
 	public static Struct booleanType = Tab.insert(Obj.Type, "bool", new Struct(Struct.Bool)).getType();
 
 	public static String structToString(Struct s) {
@@ -65,6 +80,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	HashMap<String, FunctionData> allFunctions = new HashMap<>();
 	Stack<ArrayList<Struct>> funStack = new Stack<>();
+	HashMap<MatchedMap, MapData> mapStatements = new HashMap<>();
 
 	private Obj currentMethod = null;
 	private Struct declarationType = null;
@@ -629,5 +645,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 					structToString(type1), obj1.getName(), structToString(type2), obj2.getName()), stmt);
 		}
 
+		mapStatements.put(stmt, new MapData(stmt.getExpr()));
 	}
 }

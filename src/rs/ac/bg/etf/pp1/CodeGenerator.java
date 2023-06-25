@@ -13,6 +13,8 @@ public class CodeGenerator extends VisitorAdaptor {
 
 	private int mainPc;
 
+	private ErrorLogger log = new ErrorLogger("Generisanje");
+
 	public int getMainPc() { return mainPc; }
 
 	SemanticAnalyzer sem;
@@ -27,6 +29,8 @@ public class CodeGenerator extends VisitorAdaptor {
 	 * ce se javiti pre nego sto uopste pocne iteracija po arr. Ovaj flag sluzi da spreci tu situaciju
 	 */
 	public boolean mapExpr = false;
+
+	public boolean errorDetected() { return log.errorDetected; }
 
 	// ======================================== VISITI =============================================
 
@@ -321,7 +325,7 @@ public class CodeGenerator extends VisitorAdaptor {
 			Code.put(Code.sub);
 		}
 		else {
-			sem.report_error("FATAL: unreachable branch", expr);
+			log.report_error("FATAL: unreachable branch", expr);
 		}
 	}
 
@@ -352,7 +356,7 @@ public class CodeGenerator extends VisitorAdaptor {
 			Code.put(Code.rem);
 		}
 		else {
-			sem.report_error("FATAL: unreachable branch", term);
+			log.report_error("FATAL: unreachable branch", term);
 		}
 	}
 
@@ -523,7 +527,7 @@ end:
 			// ocekuje se stek: ..., rval
 		}
 		else {
-			sem.report_error("FATAL: unreachable branch", desig);
+			log.report_error("FATAL: unreachable branch", desig);
 		}
 	}
 
@@ -562,7 +566,7 @@ end:
 			Code.load(desig.obj);
 		}
 		else {
-			sem.report_error("FATAL: unreachable branch", desig);
+			log.report_error("FATAL: unreachable branch", desig);
 		}
 	}
 

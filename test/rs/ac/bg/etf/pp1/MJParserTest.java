@@ -67,20 +67,22 @@ public class MJParserTest {
 
 		Tab.dump();
 
-		if (sem.errorDetected) {
+		if (sem.errorDetected()) {
 			throw new Exception("semanticke analize");
 		}
-		//log.info("===================================");
-		//sem.printAllFunctionDecls();
 		return sem;
 	}
 
-	public static void CodeGeneration(Program prog, SemanticAnalyzer sem, File objFile) throws FileNotFoundException {
+	public static void CodeGeneration(Program prog, SemanticAnalyzer sem, File objFile) throws FileNotFoundException, Exception {
 		CodeGenerator codeGenerator = new CodeGenerator(sem);
 		prog.traverseBottomUp(codeGenerator);
 
 		Code.dataSize = sem.nVars;
 		Code.mainPc = codeGenerator.getMainPc();
+
+		if (codeGenerator.errorDetected()) {
+			throw new Exception("generisanja koda");
+		}
 
 		deleteIfExists(objFile);
 		Code.write(new FileOutputStream(objFile));
@@ -102,6 +104,7 @@ public class MJParserTest {
 			log.info("===================================");
 
 			CodeGeneration(prog, sem, objFile);
+			sem.printAllFunctionDecls();
 			log.info(String.format("%sGenerisanje koda uspesno zavrseno%s", Colors.ANSI_GREEN, Colors.ANSI_RESET));
 
 		} catch (FileNotFoundException f) {

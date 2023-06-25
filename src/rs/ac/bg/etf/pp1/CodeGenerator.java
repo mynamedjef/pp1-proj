@@ -478,7 +478,13 @@ end:
 
 	// ------------------------------------ Designator --------------------------------------------
 
-	public void visit(DesignatorName desig) { /* empty */ }
+	public void visit(DesignatorName desig) {
+		if (mapExpr) {
+			return;
+		}
+
+		Code.load(desig.obj);
+	}
 
 	public void visit(DesignatorScalar desig) {
 		if (mapExpr) {
@@ -487,30 +493,72 @@ end:
 
 		SyntaxNode parent = desig.getParent();
 
-		// trenutni stek: ...
+		// trenutni stek: ..., var
 		if (parent instanceof MatchedRead) {
 			// ocekuje se stek: ...
+			Code.put(Code.pop);
 		}
 		else if (parent instanceof MapWrapper) {
 			// ocekuje se stek: ..., arrptr
-			if (!mapDest) { // za destinaciju ne stavljamo nista, a za source stavljamo pokazivac na niz
-				Code.load(desig.obj);
+			if (mapDest) { // za destinaciju ne stavljamo nista, a za source stavljamo pokazivac na niz
+				Code.put(Code.pop);
 			}
 			mapDest ^= true;
 		}
 		else if (parent instanceof DesignatorStatementIncr || parent instanceof DesignatorStatementDecr) {
 			// ocekuje se stek: ...
+			Code.put(Code.pop);
 		}
 		else if (parent instanceof DesignatorStatementAssign) {
 			// ocekuje se stek: ...
+			Code.put(Code.pop);
 		}
 		else if (parent instanceof FunctionName) {
 			// ocekuje se stek: ...
 			// nije potrebno nista na steku ostavljati jer FunctionCall
 			// poziva funkciju na osnovu objekta
+			Code.put(Code.pop);
 		}
 		else if (parent instanceof FactorDesignator) {
 			// ocekuje se stek: ..., rval
+		}
+		else {
+			sem.report_error("FATAL: unreachable branch", desig);
+		}
+	}
+
+	public void processDereferencing(Designator desig, Obj elemObj) {
+		SyntaxNode parent = desig.getParent();
+
+		// trenutni stek:   ..., arr, idx
+		if (parent instanceof MatchedRead) {
+			// ocekuje se stek: ..., arr, idx
+		}
+		else if (parent instanceof MapWrapper) {
+			// ocekuje se stek: ... dst, idx, src
+			if (mapDest) { // za destinaciju samo pravimo da stek bude: ..., dst, idx
+				// empty
+			} else {		// za source samo pravimo da stek bude: ..., src[idx]
+				Code.load(desig.obj);
+			}
+			mapDest ^= true;
+		}
+		else if (parent instanceof DesignatorStatementIncr || parent instanceof DesignatorStatementDecr) {
+			// ocekuje se stek: ..., arr, idx, arr, idx
+			Code.put(Code.dup2);
+		}
+		else if (parent instanceof DesignatorStatementAssign) {
+			// ocekuje se stek: ..., arr, idx
+		}
+		else if (parent instanceof FunctionName) {
+			// ocekuje se stek: ...
+			// nije potrebno nista na steku ostavljati jer FunctionCall
+			// poziva funkciju na osnovu objekta
+			Code.put(Code.pop);
+			Code.put(Code.pop);
+		}
+		else if (parent instanceof FactorDesignator) {
+			// ocekuje se stek: ..., arr[idx]
 			Code.load(desig.obj);
 		}
 		else {
@@ -523,52 +571,8 @@ end:
 			return;
 		}
 
-		SyntaxNode parent = desig.getParent();
-		Obj elemObj = desig.getDesignatorName().obj;
-
-		// trenutni stek:   ..., idx
-		if (parent instanceof MatchedRead) {
-			// ocekuje se stek: ..., arr, idx
-			Code.load(elemObj);
-			swapTop();
-		}
-		else if (parent instanceof MapWrapper) {
-			// ocekuje se stek: ... dst, idx, src
-			if (mapDest) { // za destinaciju samo pravimo da stek bude: ..., dst, idx
-				Code.load(elemObj);
-				swapTop();
-			} else {		// za source samo pravimo da stek bude: ..., src[idx]
-				Code.load(elemObj);
-				swapTop();
-				Code.load(desig.obj);
-			}
-			mapDest ^= true;
-		}
-		else if (parent instanceof DesignatorStatementIncr || parent instanceof DesignatorStatementDecr) {
-			// ocekuje se stek: ..., arr, idx, arr, idx
-			Code.load(elemObj);
-			swapTop();
-			Code.put(Code.dup2);
-		}
-		else if (parent instanceof DesignatorStatementAssign) {
-			// ocekuje se stek: ..., arr, idx
-			Code.load(elemObj);
-			swapTop();
-		}
-		else if (parent instanceof FunctionName) {
-			// ocekuje se stek: ...
-			// nije potrebno nista na steku ostavljati jer FunctionCall
-			// poziva funkciju na osnovu objekta
-		}
-		else if (parent instanceof FactorDesignator) {
-			// ocekuje se stek: ..., arr[idx]
-			Code.load(elemObj);
-			swapTop();
-			Code.load(desig.obj);
-		}
-		else {
-			sem.report_error("FATAL: unreachable branch", desig);
-		}
+		// trenutni stek: ..., arr, idx
+		processDereferencing(desig, desig.getDesignatorName().obj);
 	}
 
 	public void visit(DesignatorMatrix desig) {
@@ -576,55 +580,12 @@ end:
 			return;
 		}
 
-		SyntaxNode parent = desig.getParent();
-		Obj elemObj = desig.getDesignatorName().obj;
+		// trenutni stek: ..., mat, idx1, idx2
+		Code.put(Code.dup_x2);	// ..., idx2, mat, idx1, idx2
+		Code.put(Code.pop);		// ..., idx2, mat, idx1
+		Code.load(desig.obj);	// ..., idx2, mat[idx1]
+		swapTop();				// ..., mat[idx1], idx2
 
-		// trenutni stek: ..., idx1, idx2
-		if (parent instanceof MatchedRead) {
-			// ocekuje se stek: ..., mat[idx1], idx2
-			swapTop();				// ..., idx2, idx1
-			Code.load(elemObj);		// ..., idx2, idx1, mat
-			swapTop();				// ..., idx2, mat, idx1
-			Code.load(desig.obj);	// ..., idx2, mat[idx1]
-			swapTop();				// ..., mat[idx1], idx2
-		}
-		else if (parent instanceof MapWrapper) {
-			// ovde nikad ne bi smelo da se udje
-			sem.report_error("FATAL: unreachable branch", desig);
-		}
-		else if (parent instanceof DesignatorStatementIncr || parent instanceof DesignatorStatementDecr) {
-			// ocekuje se stek: ..., mat[idx1], idx2, mat[idx1], idx2
-			swapTop();				// ..., idx2, idx1
-			Code.load(elemObj);		// ..., idx2, idx1, mat
-			swapTop();				// ..., idx2, mat, idx1
-			Code.load(desig.obj);	// ..., idx2, mat[idx1]
-			swapTop();				// ..., mat[idx1], idx2
-			Code.put(Code.dup2);	// ..., mat[idx1], idx2, mat[idx1], idx2
-		}
-		else if (parent instanceof DesignatorStatementAssign) {
-			// ocekuje se stek: ..., mat[idx1], idx2
-			swapTop();				// ..., idx2, idx1
-			Code.load(elemObj);		// ..., idx2, idx1, mat
-			swapTop();				// ..., idx2, mat, idx1
-			Code.load(desig.obj);	// ..., idx2, mat[idx1]
-			swapTop();				// ..., mat[idx1], idx2
-		}
-		else if (parent instanceof FunctionName) {
-			// ocekuje se stek: ...
-			// nije potrebno nista na steku ostavljati jer FunctionCall
-			// poziva funkciju na osnovu objekta
-		}
-		else if (parent instanceof FactorDesignator) {
-			// ocekuje se stek: ..., mat[idx1][idx2]
-			swapTop();				// ..., idx2, idx1
-			Code.load(elemObj);		// ..., idx2, idx1, mat
-			swapTop();				// ..., idx2, mat, idx1
-			Code.load(desig.obj);	// ..., idx2, mat[idx1]
-			swapTop();				// ..., mat[idx1], idx2
-			Code.load(desig.obj);	// ..., mat[idx1][idx2]
-		}
-		else {
-			sem.report_error("FATAL: unreachable branch", desig);
-		}
+		processDereferencing(desig, desig.getDesignatorName().obj);
 	}
 }

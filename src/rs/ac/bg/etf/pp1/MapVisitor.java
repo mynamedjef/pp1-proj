@@ -59,9 +59,9 @@ public class MapVisitor extends CodeGenerator {
 
 	// ------------------------------------ Designator --------------------------------------------
 
-	/* INHERITED
-	public void visit(DesignatorName desig) { }
-	*/
+	public void visit(DesignatorName desig) {
+		// empty!
+	}
 
 	@Override
 	public void visit(DesignatorScalar desig) {

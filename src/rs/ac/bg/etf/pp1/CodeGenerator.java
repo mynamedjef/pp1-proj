@@ -53,7 +53,7 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 
 	public void generateMapFunctions() {
-		for (MatchedMap m : sem.mapStatements.keySet()) {
+		for (StatementMap m : sem.mapStatements.keySet()) {
 			SemanticAnalyzer.MapData md = sem.mapStatements.get(m);
 			Expr e = md.e;
 
@@ -124,18 +124,18 @@ public class CodeGenerator extends VisitorAdaptor {
 
 	// ---------------------------------------- Statement -----------------------------------------
 
-	public void visit(MatchedReturnExpr matched) {
+	public void visit(StatementReturnExpr stmt) {
 		// + na steku je rezultat Expr-a
 		Code.put(Code.exit);
 		Code.put(Code.return_);
 	}
 
-	public void visit(MatchedReturnVoid matched) {
+	public void visit(StatementReturnVoid stmt) {
 		Code.put(Code.exit);
 		Code.put(Code.return_);
 	}
 
-	public void visit(MatchedRead stmt) {
+	public void visit(StatementRead stmt) {
 		/*
 		 * ocekuje se jedan od ova dva steka:
 		 * 	...
@@ -151,7 +151,7 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.store(obj);
 	}
 
-	public void visit(MatchedPrintExpr print) {
+	public void visit(StatementPrintExpr print) {
 		/*
 		 * ocekuje stek: ..., val
 		 */
@@ -164,7 +164,7 @@ public class CodeGenerator extends VisitorAdaptor {
 		}
 	}
 
-	public void visit(MatchedPrintNum stmt) {
+	public void visit(StatementPrintNum stmt) {
 		/*
 		 * ocekuje stek: ..., val
 		 */
@@ -177,7 +177,7 @@ public class CodeGenerator extends VisitorAdaptor {
 		}
 	}
 
-	public void visit(MatchedMap stmt) {
+	public void visit(StatementMap stmt) {
 		/*
 		 * ocekuje ste stek:
 		 * 	..., src
@@ -498,7 +498,7 @@ end:
 		SyntaxNode parent = desig.getParent();
 
 		// trenutni stek: ..., var
-		if (parent instanceof MatchedRead) {
+		if (parent instanceof StatementRead) {
 			// ocekuje se stek: ...
 			Code.put(Code.pop);
 		}
@@ -535,7 +535,7 @@ end:
 		SyntaxNode parent = desig.getParent();
 
 		// trenutni stek:   ..., arr, idx
-		if (parent instanceof MatchedRead) {
+		if (parent instanceof StatementRead) {
 			// ocekuje se stek: ..., arr, idx
 		}
 		else if (parent instanceof MapWrapper) {

@@ -60,9 +60,9 @@ nonterminal Condition, CondFact, ConditionIf, CondTerm;
 nonterminal ConstAssign, ConstDecl, ConstList;
 nonterminal DesignatorStatement, FormPar;
 nonterminal FormPars, FormParsParens, FunctionCall, FunctionName, Label;
-nonterminal MapWrapper, Matched, MethodDecl, MethodDeclList, Mulop;
+nonterminal MapWrapper, MethodDecl, MethodDeclList, Mulop;
 nonterminal ProgHeadList, ProgHead, Relop, Statement, StatementList;
-nonterminal Unmatched, VarDecl, VarDeclList, VarList, WhileStart;
+nonterminal VarDecl, VarDeclList, VarList, WhileStart;
 
 terminal AND, BEQ, BREAK;
 terminal CLASS, COMMA, CONST, CONT, DECR;
@@ -78,6 +78,8 @@ nonterminal rs.etf.pp1.symboltable.concepts.Obj ConstOne, Designator, Designator
 nonterminal rs.etf.pp1.symboltable.concepts.Obj VarDeclSingle, ProgName, Program;
 
 nonterminal rs.etf.pp1.symboltable.concepts.Struct Expr, Factor, Term, Type;
+
+precedence left ELSE;
 
 
 Program ::= (Program) PROGRAM ProgName:p ProgHeadList LBRACE MethodDeclList RBRACE;
@@ -148,37 +150,29 @@ FormPar ::= (FormParScalar) Type IDENT:name
 
 Type ::= (Type) IDENT:typeName;
 
-Statement ::= Matched
+Statement ::= DesignatorStatement SEMI
 			|
-			Unmatched;
-
-Unmatched ::= IF ConditionIf Statement
+			IF ConditionIf Statement
 			|
-			IF ConditionIf Matched ELSE Unmatched
+			IF ConditionIf Statement ELSE Statement
 			|
-			(UnmatchedWhile) WhileStart ConditionIf Unmatched;
-
-Matched ::= DesignatorStatement SEMI
+			(StatementWhile) WhileStart ConditionIf Statement
 			|
-			IF ConditionIf Matched ELSE Matched
+			(StatementBreak) BREAK SEMI
 			|
-			(MatchedWhile) WhileStart ConditionIf Matched
+			(StatementContinue) CONT SEMI
 			|
-			(MatchedBreak) BREAK SEMI
+			(StatementReturnExpr) RETURN Expr SEMI
 			|
-			(MatchedContinue) CONT SEMI
+			(StatementReturnVoid) RETURN SEMI
 			|
-			(MatchedReturnExpr) RETURN Expr SEMI
+			(StatementRead) READ LPAREN Designator RPAREN SEMI
 			|
-			(MatchedReturnVoid) RETURN SEMI
+			(StatementPrintExpr) PRINT LPAREN Expr RPAREN SEMI
 			|
-			(MatchedRead) READ LPAREN Designator RPAREN SEMI
+			(StatementPrintNum) PRINT LPAREN Expr COMMA NUMBER RPAREN SEMI
 			|
-			(MatchedPrintExpr) PRINT LPAREN Expr RPAREN SEMI
-			|
-			(MatchedPrintNum) PRINT LPAREN Expr COMMA NUMBER RPAREN SEMI
-			|
-			(MatchedMap) MapWrapper IDENT:iter LAMBDA Expr RPAREN SEMI
+			(StatementMap) MapWrapper IDENT:iter LAMBDA Expr RPAREN SEMI
 			|
 			LBRACE StatementList RBRACE;
 

@@ -78,7 +78,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	HashMap<String, FunctionData> allFunctions = new HashMap<>();
 	Stack<ArrayList<Struct>> funStack = new Stack<>();
-	HashMap<MatchedMap, MapData> mapStatements = new HashMap<>();
+	HashMap<StatementMap, MapData> mapStatements = new HashMap<>();
 
 	private ErrorLogger log = new ErrorLogger("Semantika");
 	private Obj currentMethod = null;
@@ -288,13 +288,13 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	// ---------------
 
-	public void visit(MatchedReturnExpr matched) {
+	public void visit(StatementReturnExpr stmt) {
 		if (currentMethod == null) {
-			log.report_error("return ne moze biti van funkcije", matched);
+			log.report_error("return ne moze biti van funkcije", stmt);
 			return;
 		}
 
-		returnType = matched.getExpr().struct;
+		returnType = stmt.getExpr().struct;
 	}
 
 	// -------------------------------------- Expr --------------------------------------------------
@@ -550,11 +550,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	// ----------------------------------- Statements -----------------------------------------------
 
-	public void visit(UnmatchedWhile stmt) {
-		loopCount--;
-	}
-
-	public void visit(MatchedWhile stmt) {
+	public void visit(StatementWhile stmt) {
 		loopCount--;
 	}
 
@@ -562,33 +558,33 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		loopCount++;
 	}
 
-	public void visit(MatchedBreak stmt) {
+	public void visit(StatementBreak stmt) {
 		if (loopCount < 1) {
 			log.report_error("break iskaz ne sme biti van petlje", stmt);
 		}
 	}
 
-	public void visit(MatchedContinue stmt) {
+	public void visit(StatementContinue stmt) {
 		if (loopCount < 1) {
 			log.report_error("continue iskaz ne sme biti van petlje", stmt);
 		}
 	}
 
-	public void visit(MatchedPrintExpr stmt) {
+	public void visit(StatementPrintExpr stmt) {
 		Struct type = stmt.getExpr().struct;
 		if (!type.equals(Tab.charType) && !type.equals(Tab.intType) && !type.equals(booleanType)) {
 			log.report_error("print izraz mora biti [char, bool, int]. dat izraz: (" + structToString(type) + ')', stmt);
 		}
 	}
 
-	public void visit(MatchedPrintNum stmt) {
+	public void visit(StatementPrintNum stmt) {
 		Struct type = stmt.getExpr().struct;
 		if (!type.equals(Tab.charType) && !type.equals(Tab.intType) && !type.equals(booleanType)) {
 			log.report_error("print iskaz mora biti [char, bool, int]. dat izraz: (" + structToString(type) + ')', stmt);
 		}
 	}
 
-	public void visit(MatchedRead stmt) {
+	public void visit(StatementRead stmt) {
 		Obj obj = stmt.getDesignator().obj;
 		Struct type = obj.getType();
 		if (!type.equals(Tab.charType) && !type.equals(Tab.intType) && !type.equals(booleanType)) {
@@ -608,7 +604,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 	}
 
-	public void visit(MatchedMap stmt) {
+	public void visit(StatementMap stmt) {
 		Obj obj1 = stmt.getMapWrapper().getDesignator().obj;
 		Obj obj2 = stmt.getMapWrapper().getDesignator1().obj;
 		Struct type1 = obj1.getType();

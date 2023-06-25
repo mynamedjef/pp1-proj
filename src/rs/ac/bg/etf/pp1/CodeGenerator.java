@@ -21,6 +21,13 @@ public class CodeGenerator extends VisitorAdaptor {
 
 	public boolean mapDest = true;
 
+	/*
+	 * Map iskaz se zadaje sa Expr iskazom. S obzirom da se svi Expr iskazi automatski racunaju
+	 * na steku, moguc je slucaj arr.map(x => f(x)), gde ako f(x) ima bocni efekat, bocni efekat
+	 * ce se javiti pre nego sto uopste pocne iteracija po arr. Ovaj flag sluzi da spreci tu situaciju
+	 */
+	public boolean mapExpr = false;
+
 	// ======================================== VISITI =============================================
 
 	public void generateBuiltinFunctionsCode() {
@@ -64,14 +71,23 @@ public class CodeGenerator extends VisitorAdaptor {
 	// ------------------------------------------ Const -------------------------------------------
 
 	public void visit(ConstOneNumber cnst) {
+		if (mapExpr) {
+			return;
+		}
 		Code.load(cnst.obj);
 	}
 
 	public void visit(ConstOneBool cnst) {
+		if (mapExpr) {
+			return;
+		}
 		Code.load(cnst.obj);
 	}
 
 	public void visit(ConstOneChar cnst) {
+		if (mapExpr) {
+			return;
+		}
 		Code.load(cnst.obj);
 	}
 
@@ -160,15 +176,15 @@ public class CodeGenerator extends VisitorAdaptor {
 	public void visit(MatchedMap stmt) {
 		/*
 		 * ocekuje ste stek:
-		 * 	..., src, expr
-		 *  ..., DST, IDX, src, expr
+		 * 	..., src
+		 *  ..., DST, IDX, src
 		 *  trenutni stek ce se ignorisati tokom ispisa
 		 */
-		boolean charType = (stmt.getDesignator().obj.getType().getElemType().equals(Tab.charType));
-		Obj dst = stmt.getDesignator().obj;
+		mapExpr = false;
+		boolean charType = (stmt.getMapWrapper().getDesignator().obj.getType().getElemType().equals(Tab.charType));
+		Obj dst = stmt.getMapWrapper().getDesignator().obj;
 
-										// ..., src, expr
-		Code.put(Code.pop);				// ..., src
+										// ..., src
 		Code.put(Code.dup);				// ..., src, src
 		Code.put(Code.arraylength);		// ..., src, N
 		Code.put(Code.newarray);
@@ -208,10 +224,8 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.put2(offset);				// ..., i, src, dst, dst, i, e(src[i])
 		/*
 		 * TODO:
-		 * 1. ako se u Expr zove funkcija sa bocnim efektom, to ce biti problem jer se poziv funkcije koja je u
-		 * Expr izvrsi "u prazno" tj. njegov rezultat se odmah popuje sa steka.
-		 * 2. drugi problem je ako se uradi arr.map(x => x+y): ovo je problem jer za sad map podrzava samo koriscenje
-		 * jedne promenljive u izrazu
+		 * 1. izraz arr.map(x => x+y) nije sintaksicki neispravan. ovo je problem jer za sad map podrzava samo
+		 * koriscenje jedne promenljive u izrazu.
 		 */
 
 		Code.put(charType ?
@@ -237,6 +251,9 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.store(dst);
 	}
 
+	public void visit(MapWrapper stmt) {
+		mapExpr = true;
+	}
 	// --------------------------------------- Condition ------------------------------------------
 
 	// ---------------------------------- DesignatorStatement -------------------------------------
@@ -279,6 +296,10 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 
 	public void visit(FunctionCall func) {
+		if (mapExpr) {
+			return;
+		}
+
 		Obj obj = func.getFunctionName().getDesignator().obj;
 		int offset = obj.getAdr() - Code.pc;
 		Code.put(Code.call);
@@ -288,6 +309,10 @@ public class CodeGenerator extends VisitorAdaptor {
 	// ------------------------------------------ Expr --------------------------------------------
 
 	public void visit(ExprAddop expr) {
+		if (mapExpr) {
+			return;
+		}
+
 		Addop op = expr.getAddop();
 		if (op instanceof AddopPlus) {
 			Code.put(Code.add);
@@ -301,6 +326,9 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 
 	public void visit(ExprNegative expr) {
+		if (mapExpr) {
+			return;
+		}
 		Code.put(Code.neg);
 	}
 
@@ -309,6 +337,10 @@ public class CodeGenerator extends VisitorAdaptor {
 	// ------------------------------------------ Term --------------------------------------------
 
 	public void visit(TermMulop term) {
+		if (mapExpr) {
+			return;
+		}
+
 		Mulop op = term.getMulop();
 		if (op instanceof MulopMul) {
 			Code.put(Code.mul);
@@ -338,6 +370,10 @@ public class CodeGenerator extends VisitorAdaptor {
 		/*
 		 * ocekuje stek: ..., n
 		 */
+		if (mapExpr) {
+			return;
+		}
+
 		Code.put(Code.newarray);
 		Code.put(factor.struct.equals(Tab.charType) ? 0 : 1);
 	}
@@ -349,6 +385,10 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 
 	public void visit(FactorNewMatrix factor) {
+		if (mapExpr) {
+			return;
+		}
+
 		boolean charType = factor.struct.equals(Tab.charType);
 
 		// mat[e1][e2], e1 je broj vrsta a e2 broj kolona   STEK
@@ -441,13 +481,17 @@ end:
 	public void visit(DesignatorName desig) { /* empty */ }
 
 	public void visit(DesignatorScalar desig) {
+		if (mapExpr) {
+			return;
+		}
+
 		SyntaxNode parent = desig.getParent();
 
 		// trenutni stek: ...
 		if (parent instanceof MatchedRead) {
 			// ocekuje se stek: ...
 		}
-		else if (parent instanceof MatchedMap) {
+		else if (parent instanceof MapWrapper) {
 			// ocekuje se stek: ..., arrptr
 			if (!mapDest) { // za destinaciju ne stavljamo nista, a za source stavljamo pokazivac na niz
 				Code.load(desig.obj);
@@ -475,6 +519,10 @@ end:
 	}
 
 	public void visit(DesignatorArray desig) {
+		if (mapExpr) {
+			return;
+		}
+
 		SyntaxNode parent = desig.getParent();
 		Obj elemObj = desig.getDesignatorName().obj;
 
@@ -484,7 +532,7 @@ end:
 			Code.load(elemObj);
 			swapTop();
 		}
-		else if (parent instanceof MatchedMap) {
+		else if (parent instanceof MapWrapper) {
 			// ocekuje se stek: ... dst, idx, src
 			if (mapDest) { // za destinaciju samo pravimo da stek bude: ..., dst, idx
 				Code.load(elemObj);
@@ -524,6 +572,10 @@ end:
 	}
 
 	public void visit(DesignatorMatrix desig) {
+		if (mapExpr) {
+			return;
+		}
+
 		SyntaxNode parent = desig.getParent();
 		Obj elemObj = desig.getDesignatorName().obj;
 
@@ -536,7 +588,7 @@ end:
 			Code.load(desig.obj);	// ..., idx2, mat[idx1]
 			swapTop();				// ..., mat[idx1], idx2
 		}
-		else if (parent instanceof MatchedMap) {
+		else if (parent instanceof MapWrapper) {
 			// ovde nikad ne bi smelo da se udje
 			sem.report_error("FATAL: unreachable branch", desig);
 		}

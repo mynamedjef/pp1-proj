@@ -59,8 +59,8 @@ nonterminal ActPar, ActPars, ActParsParens, Addop;
 nonterminal Condition, CondFact, ConditionIf, CondTerm;
 nonterminal ConstAssign, ConstDecl, ConstList;
 nonterminal DesignatorStatement, FormPar;
-nonterminal FormPars, FormParsParens, FunctionCall, FunctionName, Label, Matched;
-nonterminal MethodDecl, MethodDeclList, Mulop;
+nonterminal FormPars, FormParsParens, FunctionCall, FunctionName, Label;
+nonterminal MapWrapper, Matched, MethodDecl, MethodDeclList, Mulop;
 nonterminal ProgHeadList, ProgHead, Relop, Statement, StatementList;
 nonterminal Unmatched, VarDecl, VarDeclList, VarList, WhileStart;
 
@@ -178,9 +178,11 @@ Matched ::= DesignatorStatement SEMI
 			|
 			(MatchedPrintNum) PRINT LPAREN Expr COMMA NUMBER RPAREN SEMI
 			|
-			(MatchedMap) Designator EQUAL Designator DOT MAP LPAREN IDENT:iter LAMBDA Expr RPAREN SEMI
+			(MatchedMap) MapWrapper IDENT:iter LAMBDA Expr RPAREN SEMI
 			|
 			LBRACE StatementList RBRACE;
+
+MapWrapper ::= (MapWrapper) Designator EQUAL Designator DOT MAP LPAREN;
 
 WhileStart ::= (WhileStart) WHILE;
 			

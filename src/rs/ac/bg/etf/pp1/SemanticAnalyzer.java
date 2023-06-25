@@ -631,12 +631,12 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 	}
 
 	public void visit(MatchedMap stmt) {
-		Obj obj1 = stmt.getDesignator().obj;
-		Obj obj2 = stmt.getDesignator1().obj;
+		Obj obj1 = stmt.getMapWrapper().getDesignator().obj;
+		Obj obj2 = stmt.getMapWrapper().getDesignator1().obj;
 		Struct type1 = obj1.getType();
 		Struct type2 = obj2.getType();
-		mapCheck(stmt.getDesignator());
-		mapCheck(stmt.getDesignator1());
+		mapCheck(stmt.getMapWrapper().getDesignator());
+		mapCheck(stmt.getMapWrapper().getDesignator1());
 
 		Obj iter = Tab.find(stmt.getIter());
 		if (iter == Tab.noObj) {

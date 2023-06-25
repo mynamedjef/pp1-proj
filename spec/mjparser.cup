@@ -58,8 +58,8 @@ terminal Character CHAR;
 nonterminal ActPar, ActPars, ActParsParens, Addop;
 nonterminal Condition, CondFact, ConditionIf, CondTerm;
 nonterminal ConstAssign, ConstDecl, ConstList;
-nonterminal DesignatorStatement, FormPar;
-nonterminal FormPars, FormParsParens, FunctionCall, FunctionName, Label;
+nonterminal DesignatorStatement, ElseStart, FormPar;
+nonterminal FormPars, FormParsParens, FunctionCall, FunctionName, IfStart, Label;
 nonterminal MapWrapper, MethodDecl, MethodDeclList, Mulop;
 nonterminal ProgHeadList, ProgHead, Relop, Statement, StatementList;
 nonterminal VarDecl, VarDeclList, VarList, WhileStart;
@@ -152,9 +152,9 @@ Type ::= (Type) IDENT:typeName;
 
 Statement ::= DesignatorStatement SEMI
 			|
-			IF ConditionIf Statement
+			(StatementIf) IfStart Statement
 			|
-			IF ConditionIf Statement ELSE Statement
+			(StatementElse) IfStart Statement ElseStart Statement
 			|
 			(StatementWhile) WhileStart ConditionIf Statement
 			|
@@ -175,6 +175,10 @@ Statement ::= DesignatorStatement SEMI
 			(StatementMap) MapWrapper IDENT:iter LAMBDA Expr RPAREN SEMI
 			|
 			LBRACE StatementList RBRACE;
+
+IfStart ::= (IfStart) IF ConditionIf;
+
+ElseStart ::= (ElseStart) ELSE;
 
 MapWrapper ::= (MapWrapper) Designator EQUAL Designator DOT MAP LPAREN;
 
@@ -210,11 +214,11 @@ ConditionIf ::= LPAREN Condition RPAREN
 			|
 			LPAREN error RPAREN:l {: parser.report_error("Izvršen oporavak do ')' za IF/WHILE u liniji " + lleft, null); :};
 
-Condition ::= Condition OR CondTerm
+Condition ::= (ConditionOr) Condition OR CondTerm
 			|
 			CondTerm;
 
-CondTerm ::= CondTerm AND CondFact
+CondTerm ::= (CondTermAnd) CondTerm AND CondFact
 		|
 		CondFact;
 
@@ -258,13 +262,13 @@ Relop ::= (RelopEQ) EQ
 		|
 		(RelopNEQ) NEQ
 		|
-		RANGLE
+		(RelopGT) RANGLE
 		|
-		BEQ
+		(RelopGE) BEQ
 		|
-		LANGLE
+		(RelopLT) LANGLE
 		|
-		LEQ;
+		(RelopLE) LEQ;
 
 Addop ::= (AddopPlus) PLUS
 		|

@@ -2,6 +2,7 @@ package rs.ac.bg.etf.pp1;
 
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.Stack;
 
 import rs.ac.bg.etf.pp1.SemanticAnalyzer.FunctionData;
 import rs.ac.bg.etf.pp1.ast.*;
@@ -258,7 +259,90 @@ public class CodeGenerator extends VisitorAdaptor {
 	public void visit(MapWrapper stmt) {
 		mapExpr = true;
 	}
+
 	// --------------------------------------- Condition ------------------------------------------
+
+	Stack<Integer> fixupIf = new Stack<>();
+	Stack<Integer> fixupIfEnd = new Stack<>();
+
+	public void visit(StatementIf stmt) {
+		Code.fixup(fixupIf.pop());
+		// statement code goes here
+	}
+
+	public void visit(StatementElse stmt) {
+		// statement code goes here
+		Code.fixup(fixupIfEnd.pop());
+	}
+
+	// proverava da li je vrednost condition-a jednaka 1 ili 0, i na osnovu toga skace (ili ne)
+	public void visit(IfStart ifstart) {
+		Code.loadConst(1);
+		Code.putFalseJump(Code.eq, 0);		// if (!(cond==1)) jmp end
+		fixupIf.add(Code.pc-2);
+		// statement code goes here
+	}
+
+	public void visit(ElseStart elsestart) {
+		// statement code goes here
+		Code.putJump(0);
+		fixupIfEnd.push(Code.pc-2);
+		Code.fixup(fixupIf.pop());
+	}
+
+	// ostavlja vrednost 1 na steku u slucaju da je jedna od prethodne dve vrednosti True inace vrednost 0
+	public void visit(ConditionOr cond) {
+		Code.put(Code.add);
+		Code.loadConst(0);
+		Code.putFalseJump(Code.gt, 0);
+		int adrIf = Code.pc-2;
+		Code.loadConst(1);
+		Code.putJump(0);
+		int adrElse = Code.pc-2;
+		// ELSE
+		Code.fixup(adrIf);
+		Code.loadConst(0);
+		// END
+		Code.fixup(adrElse);
+	}
+
+	// ostavlja vrednost 1 na steku u slucaju da su prethodna dve vrednosti True inace vrednost 0
+	public void visit(CondTermAnd cond) {
+		Code.put(Code.mul);
+	}
+
+	public int getRelopCode(Relop rel) {
+		if (rel instanceof RelopEQ) {
+			return Code.eq;
+		} else if (rel instanceof RelopNEQ) {
+			return Code.ne;
+		} else if (rel instanceof RelopGT) {
+			return Code.gt;
+		} else if (rel instanceof RelopGE) {
+			return Code.ge;
+		} else if (rel instanceof RelopLT) {
+			return Code.lt;
+		} else if (rel instanceof RelopLE) {
+			return Code.le;
+		} else {
+			log.report_error("Relop unreachable branch", rel);
+			return Code.eq;
+		}
+	}
+
+	// ostavlja vrednost 1 na steku u slucaju da je relop ispunjen inace vrednost 0
+	public void visit(CondFactRelop cond) {
+		Code.putFalseJump(getRelopCode(cond.getRelop()), 0);	// if (!(x relop y)) jmp else
+		int adrIf = Code.pc-2;
+		Code.loadConst(1);										// push 1
+		Code.putJump(0);										// jmp end
+		int adrElse = Code.pc-2;
+		// ELSE
+		Code.fixup(adrIf);
+		Code.loadConst(0);										// push 0
+		// END
+		Code.fixup(adrElse);
+	}
 
 	// ---------------------------------- DesignatorStatement -------------------------------------
 

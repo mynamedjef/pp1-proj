@@ -19,7 +19,7 @@ import rs.etf.pp1.mj.runtime.Code;
 import rs.etf.pp1.symboltable.*;
 import rs.etf.pp1.symboltable.concepts.*;
 
-public class MJParserTest {
+public class Compiler {
 
 	static {
 		//DOMConfigurator.configure("config/log4j.xml");
@@ -33,7 +33,7 @@ public class MJParserTest {
 		}
 	}
 	
-	private static Logger log = Logger.getLogger(MJParserTest.class);
+	private static Logger log = Logger.getLogger(Compiler.class);
 
 	public static Program syntaxAnalysis(String filename) throws Exception {
 		File sourceCode = new File(filename);

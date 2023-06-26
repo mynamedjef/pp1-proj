@@ -11,6 +11,7 @@
 				<exclude name="CodeGenerator.java"/>
 				<exclude name="MapVisitor.java"/>
 				<exclude name="ErrorLogger.java"/>
+				<exclude name="Compiler.java"/>
 			</fileset>
 		</delete>
 		<delete>
@@ -59,7 +60,7 @@
 	</target>
 
 	<target name="run">
-		<java classname="rs.ac.bg.etf.pp1.MJParserTest" fork="true">
+		<java classname="rs.ac.bg.etf.pp1.Compiler" fork="true">
 			<classpath>
 				<pathelement location="bin"/>
 				<pathelement path="lib/JFlex.jar"/>
@@ -102,6 +103,7 @@
 	</target>
 
 	<!--
+alias c='ant compile'
 alias cr='ant compile && ant runObj' # kompajluje projekat, prevodi program.mj i pokrece mjvm
 alias r='ant runObj'				 # pokrece mjvm
 alias rr='ant run'					 # pokrece MJParserTest.java

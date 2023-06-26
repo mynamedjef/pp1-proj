@@ -38,24 +38,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		}
 	}
 
-	class MapData {
-		private int adr;
-		Expr e;
-
-		public MapData(Expr e) {
-			this.e = e;
-		}
-
-		void setAdr(int adr) {
-			this.adr = adr;
-		}
-
-		int getAdr() { return adr; }
-	}
-
 	public static Struct booleanType = Tab.insert(Obj.Type, "bool", new Struct(Struct.Bool)).getType();
-
-	public static Obj mapIterator = null;
 
 	public static String structToString(Struct s) {
 		String suffix = "";
@@ -78,7 +61,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 	HashMap<String, FunctionData> allFunctions = new HashMap<>();
 	Stack<ArrayList<Struct>> funStack = new Stack<>();
-	HashMap<StatementMap, MapData> mapStatements = new HashMap<>();
 
 	private ErrorLogger log = new ErrorLogger("Semantika");
 	private Obj currentMethod = null;
@@ -120,9 +102,6 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 
 		progName.obj = Tab.insert(Obj.Prog, progName.getProgName(), Tab.noType);
 		Tab.openScope();
-
-		mapIterator = Tab.insert(Obj.Var, "map_iterator", Tab.intType);
-		mapIterator.setLevel(0);
 	}
 
 	public void visit(Program prog) {
@@ -612,9 +591,10 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 		mapCheck(stmt.getMapWrapper().getDesignator());
 		mapCheck(stmt.getMapWrapper().getDesignator1());
 
-		Obj iter = Tab.find(stmt.getIter());
+		Obj iter = Tab.find(stmt.getMapWrapper().getIter());
+		stmt.getMapWrapper().obj = iter;
 		if (iter == Tab.noObj) {
-			log.report_error(String.format("identifikator [%s] ne postoji", stmt.getIter()), stmt);
+			log.report_error(String.format("identifikator [%s] ne postoji", iter), stmt);
 		}
 		if (!iter.getType().equals(type1.getElemType())) {
 			log.report_error(String.format("tip identifikatora (%s %s) i tip niza (%s %s) se moraju poklapati",
@@ -624,7 +604,5 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			log.report_error(String.format("nizovi (%s %s) i (%s %s) moraju biti nizovi istog tipa",
 					structToString(type1), obj1.getName(), structToString(type2), obj2.getName()), stmt);
 		}
-
-		mapStatements.put(stmt, new MapData(stmt.getExpr()));
 	}
 }

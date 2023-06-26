@@ -9,7 +9,6 @@
 				<exclude name="SemanticAnalyzer.java"/>
 				<exclude name="Colors.java"/>
 				<exclude name="CodeGenerator.java"/>
-				<exclude name="MapVisitor.java"/>
 				<exclude name="ErrorLogger.java"/>
 				<exclude name="Compiler.java"/>
 			</fileset>

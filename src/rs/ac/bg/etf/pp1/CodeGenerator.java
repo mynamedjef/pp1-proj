@@ -24,13 +24,6 @@ public class CodeGenerator extends VisitorAdaptor {
 
 	public boolean mapDest = true;
 
-	/*
-	 * Map iskaz se zadaje sa Expr iskazom. S obzirom da se svi Expr iskazi automatski racunaju
-	 * na steku, moguc je slucaj arr.map(x => f(x)), gde ako f(x) ima bocni efekat, bocni efekat
-	 * ce se javiti pre nego sto uopste pocne iteracija po arr. Ovaj flag sluzi da spreci tu situaciju
-	 */
-	public boolean mapExpr = false;
-
 	// pomocna polja za implementaciju kontrolnih struktura
 	Stack<Integer> fixupIf = new Stack<>();
 	Stack<Integer> fixupIfEnd = new Stack<>();
@@ -61,22 +54,6 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.put(Code.return_);
 	}
 
-	public void generateMapFunctions() {
-		for (StatementMap m : sem.mapStatements.keySet()) {
-			SemanticAnalyzer.MapData md = sem.mapStatements.get(m);
-			Expr e = md.e;
-
-			md.setAdr(Code.pc);
-			Code.put(Code.enter); Code.put(0); Code.put(0);
-
-			MapVisitor temp = new MapVisitor(sem);
-			e.traverseBottomUp(temp);
-
-			Code.put(Code.exit);
-			Code.put(Code.return_);
-		}
-	}
-
 	public void visit(ProgName progName) {
 		generateBuiltinFunctionsCode();
 	}
@@ -84,23 +61,14 @@ public class CodeGenerator extends VisitorAdaptor {
 	// ------------------------------------------ Const -------------------------------------------
 
 	public void visit(ConstOneNumber cnst) {
-		if (mapExpr) {
-			return;
-		}
 		Code.load(cnst.obj);
 	}
 
 	public void visit(ConstOneBool cnst) {
-		if (mapExpr) {
-			return;
-		}
 		Code.load(cnst.obj);
 	}
 
 	public void visit(ConstOneChar cnst) {
-		if (mapExpr) {
-			return;
-		}
 		Code.load(cnst.obj);
 	}
 
@@ -108,7 +76,6 @@ public class CodeGenerator extends VisitorAdaptor {
 
 	public void visitMethod(MethodTypeAndName method, String name) {
 		if (name.equals("main")) {
-			generateMapFunctions();
 			mainPc = Code.pc;
 		}
 		method.obj.setAdr(Code.pc);
@@ -186,86 +153,78 @@ public class CodeGenerator extends VisitorAdaptor {
 		}
 	}
 
+	private int mapStartAdr = -1;
+	private int mapEndFixup = -1;
+
 	public void visit(StatementMap stmt) {
 		/*
-		 * ocekuje ste stek:
-		 * 	..., src
-		 *  ..., DST, IDX, src
-		 *  trenutni stek ce se ignorisati tokom ispisa
+		* ocekuje stek:
+		* ..., i, dst, src, dst, i, Expr(src[i])
 		 */
-		mapExpr = false;
 		boolean charType = (stmt.getMapWrapper().getDesignator().obj.getType().getElemType().equals(Tab.charType));
-		Obj dst = stmt.getMapWrapper().getDesignator().obj;
 
-										// ..., src
-		Code.put(Code.dup);				// ..., src, src
-		Code.put(Code.arraylength);		// ..., src, N
-		Code.put(Code.newarray);
-		Code.put(charType ? 0 : 1); 	// ..., src, dst									dst = new arr[len(src)]
-		Code.loadConst(0);				// ..., src, dst, i=0								i = 0
-
-		int forPc = Code.pc;
-		// FOR:
-		swapTop();						// ..., src, i, dst
-		Code.put(Code.dup_x2);			// ..., dst, src, i, dst
-		Code.put(Code.arraylength); 	// ..., dst, src, i, N
-		Code.put(Code.dup2);			// ..., dst, src, i, N, i, N
-
-		Code.putFalseJump(Code.lt, 0);	// ..., dst, src, i, N								if (N <= i) goto END
-		int falseJump = Code.pc-2;
-
-		Code.put(Code.pop);				// ..., dst, src, i
-		Code.put(Code.dup_x2);			// ..., i, dst, src, i
-		Code.put(Code.dup_x2);			// ..., i, i, dst, src, i
-		Code.put(Code.pop);				// ..., i, i, dst, src
-		Code.put(Code.dup_x2);			// ..., i, src, i, dst, src
-		Code.put(Code.dup_x2);			// ..., i, src, src, i, dst, src
-		Code.put(Code.pop);				// ..., i, src, src, i, dst
-		Code.put(Code.dup_x2);			// ..., i, src, dst, src, i, dst
-		Code.put(Code.dup_x2);			// ..., i, src, dst, dst, src, i, dst
-		Code.put(Code.pop);				// ..., i, src, dst, dst, src, i
-		Code.put(Code.dup_x1);			// ..., i, src, dst, dst, i, src, i
-		Code.put(charType ?
-				Code.baload :
-				Code.aload);			// ..., i, src, dst, dst, i, src[i]
-		Code.store(SemanticAnalyzer.mapIterator);
-										// ..., i, src, dst, dst, i
-
-		SemanticAnalyzer.MapData md = sem.mapStatements.get(stmt);
-		int offset = md.getAdr() - Code.pc;
-		Code.put(Code.call);
-		Code.put2(offset);				// ..., i, src, dst, dst, i, e(src[i])
-		/*
-		 * TODO:
-		 * 1. izraz arr.map(x => x+y) nije sintaksicki neispravan. ovo je problem jer za sad map podrzava samo
-		 * koriscenje jedne promenljive u izrazu.
-		 */
-
-		Code.put(charType ?
+		Code.put((charType) ?
 				Code.bastore :
-				Code.astore);			// ..., i, src, dst									dst[i] = expr(src[i])
-		swapTop();						// ..., i, dst, src
+				Code.astore);			// ..., i, dst, src				dst[i] = Expr(src[i])
 		Code.put(Code.dup_x2);			// ..., src, i, dst, src
 		Code.put(Code.pop);				// ..., src, i, dst
-		swapTop();						// ..., src, dst, i
-		Code.put(Code.const_1);			// ..., src, dst, i, 1
-		Code.put(Code.add);				// ..., src, dst, i=i+1								i++;
+		Code.put(Code.dup_x1);			// ..., src, dst, i, dst
+		Code.put(Code.arraylength);		// ..., src, dst, i, N
+		swapTop();						// ..., src, dst, N, i
+		Code.loadConst(1);				// ..., src, dst, N, i, 1
+		Code.put(Code.add);				// ..., src, dst, N, i=i+1
 
-		Code.putJump(forPc);			//													goto FOR
-		Code.fixup(falseJump);
-		// END:
-										// ..., dst, src, i, N
-		Code.put(Code.pop);				// ..., dst, src, i
-		Code.put(Code.pop);				// ..., dst, src
+		Code.putJump(mapStartAdr);
+		Code.fixup(mapEndFixup);
+										// ..., src, dst, N, i
+		Code.put(Code.pop);				// ..., src, dst, N
+		Code.put(Code.pop);				// ..., src, dst
+		swapTop();						// ..., dst, src
 		Code.put(Code.pop);				// ..., dst
-								// ..., dst
-								// ILI
-								// ..., DST, IDX, dst
-		Code.store(dst);
+									// ...
+									// DST, IDX, ...
+		Code.store(stmt.getMapWrapper().getDesignator().obj);
 	}
 
 	public void visit(MapWrapper stmt) {
-		mapExpr = true;
+		/*
+		 * ocekuje stek:
+		 * ..., src
+		 * ..., DST, IDX, src
+		 */
+		boolean charType = (stmt.getDesignator().obj.getType().getElemType().equals(Tab.charType));
+		Obj iter = stmt.obj;
+
+		Code.put(Code.dup);				// ..., src, src
+		Code.put(Code.arraylength);		// ..., src, N
+		Code.put(Code.dup);				// ..., src, N, N
+		Code.put(Code.newarray);
+		Code.loadConst((charType) ?
+				0 : 1);					// ..., src, N, dst
+		swapTop();						// ..., src, dst, N
+		Code.loadConst(0);				// ..., src, dst, N, i=0
+		// FOR:
+		mapStartAdr = Code.pc;
+		Code.put(Code.dup2);			// ..., src, dst, N, i, N, i
+		Code.putFalseJump(Code.gt, 0);	// ..., src, dst, N, i			if (i >= N) jmp END
+		mapEndFixup = Code.pc-2;
+		swapTop();						// ..., src, dst, i, N
+		Code.put(Code.pop);				// ..., src, dst, i
+		Code.put(Code.dup_x2);			// ..., i, src, dst, i
+		Code.put(Code.dup_x2);			// ..., i, i, src, dst, i
+		Code.put(Code.pop);				// ..., i, i, src, dst
+		Code.put(Code.dup_x2);			// ..., i, dst, i, src, dst
+		Code.put(Code.dup_x2);			// ..., i, dst, dst, i, src, dst
+		Code.put(Code.pop);				// ..., i, dst, dst, i, src
+		Code.put(Code.dup_x2);			// ..., i, dst, src, dst, i, src
+		swapTop();						// ..., i, dst, src, dst, src, i
+		Code.put(Code.dup_x1);			// ..., i, dst, src, dst, i, src, i
+		Code.put((charType) ?
+				Code.baload :
+				Code.aload);			// ..., i, dst, src, dst, i, src[i]
+		Code.store(iter);				// ..., i, dst, src, dst, i			iter=src[i]
+
+		// Expr code goes here!
 	}
 
 	// -------------------------------- Control Structures ----------------------------------------
@@ -420,10 +379,6 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 
 	public void visit(FunctionCall func) {
-		if (mapExpr) {
-			return;
-		}
-
 		Obj obj = func.getFunctionName().getDesignator().obj;
 		int offset = obj.getAdr() - Code.pc;
 		Code.put(Code.call);
@@ -433,10 +388,6 @@ public class CodeGenerator extends VisitorAdaptor {
 	// ------------------------------------------ Expr --------------------------------------------
 
 	public void visit(ExprAddop expr) {
-		if (mapExpr) {
-			return;
-		}
-
 		Addop op = expr.getAddop();
 		if (op instanceof AddopPlus) {
 			Code.put(Code.add);
@@ -450,9 +401,6 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 
 	public void visit(ExprNegative expr) {
-		if (mapExpr) {
-			return;
-		}
 		Code.put(Code.neg);
 	}
 
@@ -461,10 +409,6 @@ public class CodeGenerator extends VisitorAdaptor {
 	// ------------------------------------------ Term --------------------------------------------
 
 	public void visit(TermMulop term) {
-		if (mapExpr) {
-			return;
-		}
-
 		Mulop op = term.getMulop();
 		if (op instanceof MulopMul) {
 			Code.put(Code.mul);
@@ -494,9 +438,6 @@ public class CodeGenerator extends VisitorAdaptor {
 		/*
 		 * ocekuje stek: ..., n
 		 */
-		if (mapExpr) {
-			return;
-		}
 
 		Code.put(Code.newarray);
 		Code.put(factor.struct.equals(Tab.charType) ? 0 : 1);
@@ -509,10 +450,6 @@ public class CodeGenerator extends VisitorAdaptor {
 	}
 
 	public void visit(FactorNewMatrix factor) {
-		if (mapExpr) {
-			return;
-		}
-
 		boolean charType = factor.struct.equals(Tab.charType);
 
 		// mat[e1][e2], e1 je broj vrsta a e2 broj kolona   STEK
@@ -613,10 +550,6 @@ end:
 	}
 
 	public void visit(DesignatorScalar desig) {
-		if (mapExpr) {
-			return;
-		}
-
 		SyntaxNode parent = desig.getParent();
 
 		// trenutni stek: ..., var
@@ -690,19 +623,11 @@ end:
 	}
 
 	public void visit(DesignatorArray desig) {
-		if (mapExpr) {
-			return;
-		}
-
 		// trenutni stek: ..., arr, idx
 		processDereferencing(desig, desig.getDesignatorName().obj);
 	}
 
 	public void visit(DesignatorMatrix desig) {
-		if (mapExpr) {
-			return;
-		}
-
 		// trenutni stek: ..., mat, idx1, idx2
 		Code.put(Code.dup_x2);	// ..., idx2, mat, idx1, idx2
 		Code.put(Code.pop);		// ..., idx2, mat, idx1

@@ -607,7 +607,9 @@ end:
 			return;
 		}
 
-		Code.load(desig.obj);
+		if (!(desig.getParent() instanceof DesignatorScalar)) {
+			Code.load(desig.obj);
+		}
 	}
 
 	public void visit(DesignatorScalar desig) {
@@ -620,31 +622,28 @@ end:
 		// trenutni stek: ..., var
 		if (parent instanceof StatementRead) {
 			// ocekuje se stek: ...
-			Code.put(Code.pop);
 		}
 		else if (parent instanceof MapWrapper) {
 			// ocekuje se stek: ..., arrptr
-			if (mapDest) { // za destinaciju ne stavljamo nista, a za source stavljamo pokazivac na niz
-				Code.put(Code.pop);
+			if (!mapDest) { // za destinaciju ne stavljamo nista, a za source stavljamo pokazivac na niz
+				Code.load(desig.obj);
 			}
 			mapDest ^= true;
 		}
 		else if (parent instanceof DesignatorStatementIncr || parent instanceof DesignatorStatementDecr) {
 			// ocekuje se stek: ...
-			Code.put(Code.pop);
 		}
 		else if (parent instanceof DesignatorStatementAssign) {
 			// ocekuje se stek: ...
-			Code.put(Code.pop);
 		}
 		else if (parent instanceof FunctionName) {
 			// ocekuje se stek: ...
 			// nije potrebno nista na steku ostavljati jer FunctionCall
 			// poziva funkciju na osnovu objekta
-			Code.put(Code.pop);
 		}
 		else if (parent instanceof FactorDesignator) {
 			// ocekuje se stek: ..., rval
+			Code.load(desig.obj);
 		}
 		else {
 			log.report_error("FATAL: unreachable branch", desig);

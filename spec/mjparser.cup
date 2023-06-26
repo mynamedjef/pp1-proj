@@ -62,7 +62,7 @@ nonterminal DesignatorStatement, ElseStart, FormPar;
 nonterminal FormPars, FormParsParens, FunctionCall, FunctionName, IfStart, Label;
 nonterminal MapWrapper, MethodDecl, MethodDeclList, Mulop;
 nonterminal ProgHeadList, ProgHead, Relop, Statement, StatementList;
-nonterminal VarDecl, VarDeclList, VarList, WhileStart;
+nonterminal VarDecl, VarDeclList, VarList, WhileCondition, WhileStart;
 
 terminal AND, BEQ, BREAK;
 terminal CLASS, COMMA, CONST, CONT, DECR;
@@ -156,7 +156,7 @@ Statement ::= DesignatorStatement SEMI
 			|
 			(StatementElse) IfStart Statement ElseStart Statement
 			|
-			(StatementWhile) WhileStart ConditionIf Statement
+			(StatementWhile) WhileCondition Statement
 			|
 			(StatementBreak) BREAK SEMI
 			|
@@ -182,8 +182,10 @@ ElseStart ::= (ElseStart) ELSE;
 
 MapWrapper ::= (MapWrapper) Designator EQUAL Designator DOT MAP LPAREN;
 
+WhileCondition ::= (WhileCondition) WhileStart ConditionIf;
+
 WhileStart ::= (WhileStart) WHILE;
-			
+
 StatementList ::= StatementList Statement
 				|
 				;

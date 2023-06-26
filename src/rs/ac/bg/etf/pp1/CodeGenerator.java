@@ -265,6 +265,9 @@ public class CodeGenerator extends VisitorAdaptor {
 	Stack<Integer> fixupIf = new Stack<>();
 	Stack<Integer> fixupIfEnd = new Stack<>();
 
+	Stack<Integer> fixupWhileCondition = new Stack<>();
+	Stack<Integer> fixupWhileEnd = new Stack<>();
+
 	public void visit(StatementIf stmt) {
 		Code.fixup(fixupIf.pop());
 		// statement code goes here
@@ -275,11 +278,17 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.fixup(fixupIfEnd.pop());
 	}
 
+	public void visit(StatementWhile stmt) {
+		// statement code goes here
+		Code.putJump(fixupWhileCondition.pop());
+		Code.fixup(fixupWhileEnd.pop());
+	}
+
 	// proverava da li je vrednost condition-a jednaka 1 ili 0, i na osnovu toga skace (ili ne)
 	public void visit(IfStart ifstart) {
 		Code.loadConst(1);
 		Code.putFalseJump(Code.eq, 0);		// if (!(cond==1)) jmp end
-		fixupIf.add(Code.pc-2);
+		fixupIf.push(Code.pc-2);
 		// statement code goes here
 	}
 
@@ -288,6 +297,17 @@ public class CodeGenerator extends VisitorAdaptor {
 		Code.putJump(0);
 		fixupIfEnd.push(Code.pc-2);
 		Code.fixup(fixupIf.pop());
+	}
+
+	public void visit(WhileCondition whilecondition) {
+		Code.loadConst(1);
+		Code.putFalseJump(Code.eq, 0);
+		fixupWhileEnd.push(Code.pc-2);
+		// statement code goes here
+	}
+
+	public void visit(WhileStart whilestart) {
+		fixupWhileCondition.push(Code.pc);
 	}
 
 	// ostavlja vrednost 1 na steku u slucaju da je jedna od prethodne dve vrednosti True inace vrednost 0

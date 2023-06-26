@@ -59,7 +59,7 @@
 	</target>
 
 	<target name="run">
-		<java classname="rs.ac.bg.etf.pp1.MJParserTest">
+		<java classname="rs.ac.bg.etf.pp1.MJParserTest" fork="true">
 			<classpath>
 				<pathelement location="bin"/>
 				<pathelement path="lib/JFlex.jar"/>
@@ -72,7 +72,7 @@
 	</target>
 
 	<target name="disasm" depends="run">
-		<java classname="rs.etf.pp1.mj.runtime.disasm">
+		<java classname="rs.etf.pp1.mj.runtime.disasm" fork="true">
 			<arg value="test/program.obj"/>
 			<classpath>
 				<pathelement location="lib/mj-runtime-1.1.jar"/>
@@ -81,7 +81,7 @@
 	</target>
 
 	<target name="debug" depends="disasm">
-	    <java classname="rs.etf.pp1.mj.runtime.Run">
+	    <java classname="rs.etf.pp1.mj.runtime.Run" fork="true">
 	        <arg value="test/program.obj" />
 	        <arg value="-debug" />
 	        <redirector input="input.txt" />
@@ -92,7 +92,8 @@
 	</target>
 
 	<target name="runObj" depends="disasm">
-		<java classname="rs.etf.pp1.mj.runtime.Run">
+		<redirector input="input.txt"/>
+		<java classname="rs.etf.pp1.mj.runtime.Run" fork="true">
 			<arg value="test/program.obj"/>
 			<classpath>
 				<pathelement location="lib/mj-runtime-1.1.jar"/>
@@ -101,9 +102,10 @@
 	</target>
 
 	<!--
-		alias cr='ant compile && ant runObj' # kompajluje projekat, prevodi program.mj i pokrece mjvm
-		alias r='ant runObj'				 # pokrece mjvm
-		alias cdd='ant compile && ant debug' # kompajluje projekat, debaguje mjvm
-		alias d='ant debug'				     # debaguje mjvm
+alias cr='ant compile && ant runObj' # kompajluje projekat, prevodi program.mj i pokrece mjvm
+alias r='ant runObj'				 # pokrece mjvm
+alias rr='ant run'					 # pokrece MJParserTest.java
+alias cdd='ant compile && ant debug' # kompajluje projekat, debaguje mjvm
+alias d='ant debug'				     # debaguje mjvm
 	-->
 </project>

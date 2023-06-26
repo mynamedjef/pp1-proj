@@ -1,3 +1,9 @@
+# IDE
+.classpath
+.project
+.settings
+
 bin/
 logs/
 spec/mjparser_astbuild.cup
+test/*.obj

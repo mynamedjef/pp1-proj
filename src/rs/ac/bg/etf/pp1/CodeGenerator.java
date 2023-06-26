@@ -31,6 +31,14 @@ public class CodeGenerator extends VisitorAdaptor {
 	 */
 	public boolean mapExpr = false;
 
+	// pomocna polja za implementaciju kontrolnih struktura
+	Stack<Integer> fixupIf = new Stack<>();
+	Stack<Integer> fixupIfEnd = new Stack<>();
+
+	Stack<Integer> fixupWhileCondition = new Stack<>();
+	Stack<ArrayList<Integer>> fixupLoopEnd = new Stack<>();
+	// -------------------------------------------------------
+
 	public boolean errorDetected() { return log.errorDetected; }
 
 	// ======================================== VISITI =============================================
@@ -260,13 +268,7 @@ public class CodeGenerator extends VisitorAdaptor {
 		mapExpr = true;
 	}
 
-	// --------------------------------------- Condition ------------------------------------------
-
-	Stack<Integer> fixupIf = new Stack<>();
-	Stack<Integer> fixupIfEnd = new Stack<>();
-
-	Stack<Integer> fixupWhileCondition = new Stack<>();
-	Stack<Integer> fixupWhileEnd = new Stack<>();
+	// -------------------------------- Control Structures ----------------------------------------
 
 	public void visit(StatementIf stmt) {
 		Code.fixup(fixupIf.pop());
@@ -281,7 +283,18 @@ public class CodeGenerator extends VisitorAdaptor {
 	public void visit(StatementWhile stmt) {
 		// statement code goes here
 		Code.putJump(fixupWhileCondition.pop());
-		Code.fixup(fixupWhileEnd.pop());
+		for (int br : fixupLoopEnd.pop()) {
+			Code.fixup(br);
+		}
+	}
+
+	public void visit(StatementBreak stmt) {
+		Code.putJump(0);
+		fixupLoopEnd.peek().add(Code.pc-2);
+	}
+
+	public void visit(StatementContinue stmt) {
+		Code.putJump(fixupWhileCondition.peek());
 	}
 
 	// proverava da li je vrednost condition-a jednaka 1 ili 0, i na osnovu toga skace (ili ne)
@@ -302,13 +315,16 @@ public class CodeGenerator extends VisitorAdaptor {
 	public void visit(WhileCondition whilecondition) {
 		Code.loadConst(1);
 		Code.putFalseJump(Code.eq, 0);
-		fixupWhileEnd.push(Code.pc-2);
+		fixupLoopEnd.peek().add(Code.pc-2);
 		// statement code goes here
 	}
 
 	public void visit(WhileStart whilestart) {
 		fixupWhileCondition.push(Code.pc);
+		fixupLoopEnd.push(new ArrayList<>());
 	}
+
+	// --------------------------------------- Condition ------------------------------------------
 
 	// ostavlja vrednost 1 na steku u slucaju da je jedna od prethodne dve vrednosti True inace vrednost 0
 	public void visit(ConditionOr cond) {

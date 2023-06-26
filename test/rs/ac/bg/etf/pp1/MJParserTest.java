@@ -22,6 +22,7 @@ import rs.etf.pp1.symboltable.concepts.*;
 public class MJParserTest {
 
 	static {
+		//DOMConfigurator.configure("config/log4j.xml");
 		DOMConfigurator.configure(Log4JUtils.instance().findLoggerConfigFile());
 		Log4JUtils.instance().prepareLogFile(Logger.getRootLogger());
 	}

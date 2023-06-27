@@ -1,4 +1,4 @@
-package rs.ac.bg.etf.pp1;
+package pp1;
 
 import java.util.HashMap;
 import java.util.ArrayList;
@@ -6,7 +6,7 @@ import java.util.Stack;
 
 import org.apache.log4j.Logger;
 
-import rs.ac.bg.etf.pp1.ast.*;
+import pp1.ast.*;
 import rs.etf.pp1.symboltable.*;
 import rs.etf.pp1.symboltable.concepts.*;
 

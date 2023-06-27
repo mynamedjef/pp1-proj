@@ -1,5 +1,5 @@
 
-package rs.ac.bg.etf.pp1;
+package pp1;
 
 import java_cup.runtime.Symbol;
 

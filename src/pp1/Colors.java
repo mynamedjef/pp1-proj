@@ -1,4 +1,4 @@
-package rs.ac.bg.etf.pp1;
+package pp1;
 
 public class Colors {
 	public static final String ANSI_RESET = "\u001B[0m";

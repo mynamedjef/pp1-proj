@@ -1,11 +1,11 @@
-package rs.ac.bg.etf.pp1;
+package pp1;
 
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Stack;
 
-import rs.ac.bg.etf.pp1.SemanticAnalyzer.FunctionData;
-import rs.ac.bg.etf.pp1.ast.*;
+import pp1.SemanticAnalyzer.FunctionData;
+import pp1.ast.*;
 import rs.etf.pp1.mj.runtime.Code;
 import rs.etf.pp1.symboltable.*;
 import rs.etf.pp1.symboltable.concepts.*;
@@ -540,10 +540,6 @@ end:
 	// ------------------------------------ Designator --------------------------------------------
 
 	public void visit(DesignatorName desig) {
-		if (mapExpr) {
-			return;
-		}
-
 		if (!(desig.getParent() instanceof DesignatorScalar)) {
 			Code.load(desig.obj);
 		}

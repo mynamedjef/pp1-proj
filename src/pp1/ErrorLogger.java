@@ -1,8 +1,8 @@
-package rs.ac.bg.etf.pp1;
+package pp1;
 
 import org.apache.log4j.Logger;
 
-import rs.ac.bg.etf.pp1.ast.SyntaxNode;
+import pp1.ast.SyntaxNode;
 
 public class ErrorLogger {
 

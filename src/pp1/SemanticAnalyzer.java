@@ -325,6 +325,7 @@ public class SemanticAnalyzer extends VisitorAdaptor {
 			return;
 		}
 		if (obj.getKind() == Obj.Meth) {
+			log.report_error(String.format("Ime funkcije [%s] ne sme samo figurisati u izrazu (mora se pozvati)", obj.getName()), factor);
 			return;
 		}
 		factor.struct = obj.getType();
